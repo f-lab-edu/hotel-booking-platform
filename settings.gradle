@@ -1,1 +1,17 @@
 rootProject.name = 'hotel-booking-platform'
+
+include 'api-gateway'
+
+include 'core:domain'
+include 'core:common'
+
+include 'service:auth-service'
+include 'service:user-service'
+include 'service:hotel-service'
+include 'service:pricing-service'
+include 'service:booking-service'
+
+include 'event:notification'
+
+include 'infra:monitoring'
+include 'infra:pricing-batch'
