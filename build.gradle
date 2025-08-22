@@ -1,37 +1,85 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.4'
-    id 'io.spring.dependency-management' version '1.1.7'
+    // 루트에는 플러그인을 적용하지 않고, 하위 모듈에서만 적용하도록 설정
+    id 'org.springframework.boot' version '3.5.4' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
 }
 
 group = 'dev.muho'
 version = '0.0.1-SNAPSHOT'
 description = 'hotel-booking-platform'
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+// 모든 하위 모듈에 적용될 공통 설정
+subprojects {
+    apply plugin: 'java'
+
+    group = rootProject.group
+    version = rootProject.version
+
+    repositories {
+        mavenCentral()
     }
-}
 
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
+    // 순수 Java 프로젝트 (core 하위 모듈들)와 Spring 프로젝트 분리
+    def isPureJavaModule = project.path.startsWith(':core:')
+    def isContainerProject = project.path in [':core', ':event', ':infra', ':service']
+
+    if (isPureJavaModule) {
+        // 순수 Java 프로젝트 설정
+        apply plugin: 'io.spring.dependency-management'
+
+        dependencyManagement {
+            imports {
+                // Spring Boot BOM을 사용하여 의존성 버전 통일 (Spring 의존성은 사용하지 않음)
+                mavenBom 'org.springframework.boot:spring-boot-dependencies:3.5.4'
+            }
+        }
+
+        dependencies {
+            // 순수 Java 테스트 의존성 (최소한의 구성)
+            testImplementation 'org.junit.jupiter:junit-jupiter'
+            testImplementation 'org.assertj:assertj-core'
+        }
+    } else if (!isContainerProject) {
+        // Spring Boot 프로젝트 설정 (core 외 모든 모듈)
+        apply plugin: 'org.springframework.boot'
+        apply plugin: 'io.spring.dependency-management'
+
+        dependencies {
+            // Spring Boot 테스트 의존성 (MockMvc, @SpringBootTest 등 포함)
+            testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+            implementation(project(':core:domain'))
+            implementation(project(':core:common'))
+        }
     }
-}
 
-repositories {
-    mavenCentral()
-}
+    if (!isContainerProject) {
+        dependencies {
+            // 모든 모듈이 공통으로 사용하는 의존성
+            compileOnly 'org.projectlombok:lombok'
+            annotationProcessor 'org.projectlombok:lombok'
+            testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+        }
+    }
 
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter'
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
 
-tasks.named('test') {
-    useJUnitPlatform()
+    configurations {
+        compileOnly {
+            extendsFrom annotationProcessor
+        }
+    }
+
+    tasks.named('test', Test) {
+        useJUnitPlatform()
+        // 테스트 실행 시 로그 출력 설정
+        testLogging {
+            events 'passed', 'skipped', 'failed'
+        }
+    }
 }
