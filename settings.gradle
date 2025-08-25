@@ -2,9 +2,6 @@ rootProject.name = 'hotel-booking-platform'
 
 include 'api-gateway'
 
-include 'core:domain'
-include 'core:common'
-
 include 'service:auth-service'
 include 'service:user-service'
 include 'service:hotel-service'
