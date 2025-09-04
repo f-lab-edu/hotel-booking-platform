@@ -5,7 +5,6 @@ include 'api-gateway'
 include 'service:auth-service'
 include 'service:user-service'
 include 'service:hotel-service'
-include 'service:pricing-service'
 include 'service:booking-service'
 
 include 'event:notification'
