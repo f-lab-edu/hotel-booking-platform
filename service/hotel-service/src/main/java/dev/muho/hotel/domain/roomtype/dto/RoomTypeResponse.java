@@ -7,6 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class RoomTypeResponse {
     private Long id;
+    private Long hotelId;
     private String name;
     private String description;
     private Integer maxOccupancy;

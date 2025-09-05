@@ -4,6 +4,7 @@ import dev.muho.hotel.domain.ratecalendar.AdjustmentType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 import java.util.Set;
 
 @Getter
+@Builder
 public class RateCalendarUpdateRequest {
 
     @NotBlank(message = "규칙 이름은 필수입니다.")
@@ -19,10 +21,8 @@ public class RateCalendarUpdateRequest {
 
     private String description;
 
-    @NotNull(message = "시작일은 필수입니다.")
     private LocalDate startDate;
 
-    @NotNull(message = "종료일은 필수입니다.")
     private LocalDate endDate;
 
     private Set<DayOfWeek> applicableDays;

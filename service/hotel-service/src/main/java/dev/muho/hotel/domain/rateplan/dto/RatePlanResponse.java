@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class RatePlanResponse {
     private Long id;
+    private Long roomTypeId;
     private String name;
     private String description;
     private BigDecimal basePrice;

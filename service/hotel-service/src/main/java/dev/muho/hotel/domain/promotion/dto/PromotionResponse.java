@@ -9,9 +9,10 @@ import java.math.BigDecimal;
 @Getter
 @AllArgsConstructor
 public class PromotionResponse {
-    private Long promotionId;
+    private Long id;
     private Long applicableHotelId;
     private Long applicableRoomTypeId;
+    private Long applicableRatePlanId;
     private String name;
     private String description;
     private DiscountType discountType;

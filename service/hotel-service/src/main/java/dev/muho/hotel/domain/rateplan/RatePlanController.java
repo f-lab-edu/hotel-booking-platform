@@ -4,7 +4,11 @@ import dev.muho.hotel.domain.rateplan.dto.RatePlanCreateRequest;
 import dev.muho.hotel.domain.rateplan.dto.RatePlanResponse;
 import dev.muho.hotel.domain.rateplan.dto.RatePlanUpdateRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,38 +19,46 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 @RestController
 @RequestMapping("/v1/room-types/{roomTypeId}/rate-plans")
+@RequiredArgsConstructor
 public class RatePlanController {
 
+    private final FakeRatePlanRepository ratePlanRepository;
+
     @GetMapping
-    public List<RatePlanResponse> getRatePlans(@PathVariable Long roomTypeId) {
-        return List.of(
-                new RatePlanResponse(1L, "Standard Rate", "Standard rate plan", BigDecimal.valueOf(100), true, true, 1, 30),
-                new RatePlanResponse(2L, "Non-Refundable Rate", "Non-refundable rate plan", BigDecimal.valueOf(80), false, false, 1, 30)
-        );
+    public Page<RatePlanResponse> getRatePlans(@PathVariable Long roomTypeId, Pageable pageable) {
+        return ratePlanRepository.findAll(roomTypeId, pageable);
     }
 
     @GetMapping("/{ratePlanId}")
-    public RatePlanResponse getRatePlan(@PathVariable Long roomTypeId, @PathVariable Long ratePlanId) {
-        return new RatePlanResponse(ratePlanId, "Standard Rate", "Standard rate plan", BigDecimal.valueOf(100), true, true, 1, 30);
+    public ResponseEntity<RatePlanResponse> getRatePlan(@PathVariable Long roomTypeId, @PathVariable Long ratePlanId) {
+        RatePlanResponse ratePlan = ratePlanRepository.findById(ratePlanId);
+        if (ratePlan == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(ratePlan);
     }
 
     @PostMapping
-    public RatePlanResponse createRatePlan(@PathVariable Long roomTypeId, @Valid @RequestBody RatePlanCreateRequest ratePlanCreateRequest) {
-        return new RatePlanResponse(1L, ratePlanCreateRequest.getName(), ratePlanCreateRequest.getDescription(), ratePlanCreateRequest.getBasePrice(), ratePlanCreateRequest.isBreakfastIncluded(), ratePlanCreateRequest.isRefundable(), ratePlanCreateRequest.getMinNights(), ratePlanCreateRequest.getMaxNights());
+    public ResponseEntity<RatePlanResponse> createRatePlan(@PathVariable Long roomTypeId, @Valid @RequestBody RatePlanCreateRequest ratePlanCreateRequest) {
+        RatePlanResponse createdRatePlan = ratePlanRepository.save(roomTypeId, ratePlanCreateRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdRatePlan);
     }
 
     @PutMapping("/{ratePlanId}")
-    public RatePlanResponse updateRatePlan(@PathVariable Long roomTypeId, @PathVariable Long ratePlanId, @Valid @RequestBody RatePlanUpdateRequest ratePlanUpdateRequest) {
-        return new RatePlanResponse(ratePlanId, ratePlanUpdateRequest.getName(), ratePlanUpdateRequest.getDescription(), ratePlanUpdateRequest.getBasePrice(), ratePlanUpdateRequest.isBreakfastIncluded(), ratePlanUpdateRequest.isRefundable(), ratePlanUpdateRequest.getMinNights(), ratePlanUpdateRequest.getMaxNights());
+    public ResponseEntity<RatePlanResponse> updateRatePlan(@PathVariable Long roomTypeId, @PathVariable Long ratePlanId, @Valid @RequestBody RatePlanUpdateRequest ratePlanUpdateRequest) {
+        RatePlanResponse ratePlan = ratePlanRepository.findById(ratePlanId);
+        if (ratePlan == null) {
+            return ResponseEntity.notFound().build();
+        }
+        ratePlan = ratePlanRepository.update(roomTypeId, ratePlanId, ratePlanUpdateRequest);
+        return ResponseEntity.ok(ratePlan);
     }
 
     @DeleteMapping("/{ratePlanId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteRatePlan(@PathVariable Long roomTypeId, @PathVariable Long ratePlanId) {
+        ratePlanRepository.delete(ratePlanId);
     }
 }

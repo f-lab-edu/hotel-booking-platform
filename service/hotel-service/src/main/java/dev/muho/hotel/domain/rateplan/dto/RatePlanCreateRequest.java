@@ -4,11 +4,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
 
 @Getter
+@Builder
 public class RatePlanCreateRequest {
 
     @NotBlank(message = "요금제 이름은 필수입니다.")
@@ -20,9 +22,9 @@ public class RatePlanCreateRequest {
     @PositiveOrZero(message = "기본 가격은 0 이상이어야 합니다.")
     private BigDecimal basePrice;
 
-    private boolean isBreakfastIncluded;
+    private boolean breakfastIncluded;
 
-    private boolean isRefundable;
+    private boolean refundable;
 
     @Positive(message = "최소 숙박일은 1 이상이어야 합니다.")
     private Integer minNights;

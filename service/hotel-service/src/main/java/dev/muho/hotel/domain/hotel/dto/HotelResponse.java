@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class HotelResponse {
-    private Long hotelId;
+    private Long id;
     private String name;
     private String address;
     private String country;

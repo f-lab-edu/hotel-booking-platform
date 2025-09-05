@@ -3,11 +3,13 @@ package dev.muho.hotel.domain.roominventory.dto;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDate;
 
 @Getter
+@Builder
 public class RoomInventoryUpdateRequest {
 
     @NotNull(message = "날짜는 필수입니다.")

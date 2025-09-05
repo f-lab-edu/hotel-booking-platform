@@ -4,11 +4,13 @@ import dev.muho.hotel.domain.promotion.DiscountType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
 
 @Getter
+@Builder
 public class PromotionUpdateRequest {
 
     private Long applicableHotelId;
