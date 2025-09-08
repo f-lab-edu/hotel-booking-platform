@@ -1,11 +1,12 @@
-package dev.muho.auth;
+package dev.muho.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.muho.auth.domain.auth.AuthController;
-import dev.muho.auth.domain.auth.FakeAuthRepository;
-import dev.muho.auth.domain.auth.dto.LoginRequest;
-import dev.muho.auth.domain.auth.dto.PasswordChangeRequest;
-import dev.muho.auth.domain.auth.dto.TokenRefreshRequest;
+import dev.muho.FakeDBConfiguration;
+import dev.muho.user.domain.auth.AuthController;
+import dev.muho.user.domain.auth.FakeAuthRepository;
+import dev.muho.user.domain.auth.dto.LoginRequest;
+import dev.muho.user.domain.auth.dto.PasswordChangeRequest;
+import dev.muho.user.domain.auth.dto.TokenRefreshRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
