@@ -1,4 +1,4 @@
-package dev.muho.auth.domain.auth.dto;
+package dev.muho.user.domain.auth.dto;
 
 import lombok.Builder;
 import lombok.Getter;

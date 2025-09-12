@@ -1,6 +1,7 @@
 package dev.muho.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.muho.FakeDBConfiguration;
 import dev.muho.user.domain.user.FakeUserRepository;
 import dev.muho.user.domain.user.UserController;
 import dev.muho.user.domain.user.UserRole;
