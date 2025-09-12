@@ -1,4 +1,4 @@
-package dev.muho.user.domain.auth.dto;
+package dev.muho.user.domain.auth.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
