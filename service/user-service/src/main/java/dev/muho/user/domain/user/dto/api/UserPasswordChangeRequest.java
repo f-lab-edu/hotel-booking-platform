@@ -1,4 +1,4 @@
-package dev.muho.user.domain.auth.dto;
+package dev.muho.user.domain.user.dto.api;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -7,7 +7,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class PasswordChangeRequest {
+public class UserPasswordChangeRequest {
 
     @NotBlank(message = "현재 비밀번호를 입력해주세요.")
     private String currentPassword;

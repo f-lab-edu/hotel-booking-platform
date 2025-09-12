@@ -1,9 +1,9 @@
 package dev.muho.user.domain.auth;
 
-import dev.muho.user.domain.auth.dto.AuthResponse;
-import dev.muho.user.domain.auth.dto.LoginRequest;
-import dev.muho.user.domain.auth.dto.PasswordChangeRequest;
-import dev.muho.user.domain.auth.dto.TokenRefreshRequest;
+import dev.muho.user.domain.auth.dto.response.AuthResponse;
+import dev.muho.user.domain.auth.dto.request.LoginRequest;
+import dev.muho.user.domain.auth.dto.request.PasswordChangeRequest;
+import dev.muho.user.domain.auth.dto.request.TokenRefreshRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

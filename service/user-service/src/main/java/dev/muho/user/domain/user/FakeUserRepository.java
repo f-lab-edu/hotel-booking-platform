@@ -1,9 +1,9 @@
 package dev.muho.user.domain.user;
 
-import dev.muho.user.domain.user.dto.UserResponse;
-import dev.muho.user.domain.user.dto.UserRoleUpdateRequest;
-import dev.muho.user.domain.user.dto.UserSignupRequest;
-import dev.muho.user.domain.user.dto.UserUpdateRequest;
+import dev.muho.user.domain.user.dto.api.UserRoleUpdateRequest;
+import dev.muho.user.domain.user.dto.api.UserSignupRequest;
+import dev.muho.user.domain.user.dto.api.UserUpdateRequest;
+import dev.muho.user.domain.user.dto.api.UserResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;

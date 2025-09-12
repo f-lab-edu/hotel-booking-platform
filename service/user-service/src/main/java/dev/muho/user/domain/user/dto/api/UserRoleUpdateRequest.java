@@ -1,6 +1,6 @@
-package dev.muho.user.domain.user.dto;
+package dev.muho.user.domain.user.dto.api;
 
-import dev.muho.user.domain.user.UserRole;
+import dev.muho.user.domain.user.entity.UserRole;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
