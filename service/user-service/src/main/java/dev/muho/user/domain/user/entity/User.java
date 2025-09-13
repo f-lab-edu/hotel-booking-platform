@@ -108,6 +108,13 @@ public class User extends BaseTimeEntity {
         this.withdrawnAt = LocalDateTime.now();
     }
 
+    /**
+     * 회원 활성화 상태 조회
+     */
+    public boolean isActive() {
+        return this.status == UserStatus.ACTIVE;
+    }
+
     // 내부 검증 메서드들
     private static void validateEmail(String email) {
         if (email == null) throw new InvalidUserInputException("이메일은 null 일 수 없습니다.");

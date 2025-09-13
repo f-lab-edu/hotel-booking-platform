@@ -1,4 +1,4 @@
-package dev.muho.user.domain.auth.dto.request;
+package dev.muho.user.domain.auth.dto.api;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
