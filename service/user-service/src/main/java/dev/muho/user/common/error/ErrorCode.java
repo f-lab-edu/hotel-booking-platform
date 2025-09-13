@@ -13,9 +13,10 @@ public enum ErrorCode {
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "U002", "접근이 거부되었습니다."),
     USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "U003", "이미 존재하는 사용자입니다."),
     INVALID_USER_INPUT(HttpStatus.BAD_REQUEST, "U004", "잘못된 사용자 입력입니다."),
-    INVALID_USER_ROLE(HttpStatus.BAD_REQUEST, "U005", "잘못된 사용자 역할입니다.");
+    INVALID_USER_ROLE(HttpStatus.BAD_REQUEST, "U005", "잘못된 사용자 역할입니다."),
 
     // auth
+    AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "A001", "인증에 실패했습니다.");
 
     // field
     private final HttpStatus status;
