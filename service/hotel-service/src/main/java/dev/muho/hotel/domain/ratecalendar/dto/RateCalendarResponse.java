@@ -1,6 +1,7 @@
 package dev.muho.hotel.domain.ratecalendar.dto;
 
-import dev.muho.hotel.domain.ratecalendar.AdjustmentType;
+import dev.muho.hotel.domain.ratecalendar.dto.command.RateCalendarInfoResult;
+import dev.muho.hotel.domain.ratecalendar.entity.AdjustmentType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -22,4 +23,18 @@ public class RateCalendarResponse {
     private Set<DayOfWeek> applicableDays;
     private AdjustmentType adjustmentType;
     private BigDecimal adjustmentValue;
+
+    public static RateCalendarResponse from(RateCalendarInfoResult r) {
+        return new RateCalendarResponse(
+                r.id(),
+                r.hotelId(),
+                r.name(),
+                r.description(),
+                r.startDate(),
+                r.endDate(),
+                r.applicableDays(),
+                r.adjustmentType(),
+                r.adjustmentValue()
+        );
+    }
 }

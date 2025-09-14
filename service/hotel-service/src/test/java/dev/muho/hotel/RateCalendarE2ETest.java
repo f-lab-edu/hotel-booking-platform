@@ -1,8 +1,7 @@
 package dev.muho.hotel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.muho.hotel.domain.ratecalendar.AdjustmentType;
-import dev.muho.hotel.domain.ratecalendar.FakeRateCalendarRepository;
+import dev.muho.hotel.domain.ratecalendar.entity.AdjustmentType;
 import dev.muho.hotel.domain.ratecalendar.RateCalendarController;
 import dev.muho.hotel.domain.ratecalendar.dto.RateCalendarCreateRequest;
 import dev.muho.hotel.domain.ratecalendar.dto.RateCalendarUpdateRequest;

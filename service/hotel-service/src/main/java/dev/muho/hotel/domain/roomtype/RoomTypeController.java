@@ -3,62 +3,66 @@ package dev.muho.hotel.domain.roomtype;
 import dev.muho.hotel.domain.roomtype.dto.RoomTypeCreateRequest;
 import dev.muho.hotel.domain.roomtype.dto.RoomTypeResponse;
 import dev.muho.hotel.domain.roomtype.dto.RoomTypeUpdateRequest;
+import dev.muho.hotel.domain.roomtype.dto.command.RoomTypeCreateCommand;
+import dev.muho.hotel.domain.roomtype.dto.command.RoomTypeInfoResult;
+import dev.muho.hotel.domain.roomtype.service.RoomTypeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/v1/hotels/{hotelId}/room-types")
 @RequiredArgsConstructor
 public class RoomTypeController {
 
-    private final FakeRoomTypeRepository roomTypeRepository;
+    private final RoomTypeService roomTypeService;
 
     @GetMapping
     public Page<RoomTypeResponse> getRoomTypes(@PathVariable Long hotelId, Pageable pageable) {
-        return roomTypeRepository.findAll(hotelId, pageable);
+        return roomTypeService.search(hotelId, pageable).map(RoomTypeResponse::from);
     }
 
     @GetMapping("/{roomTypeId}")
     public ResponseEntity<RoomTypeResponse> getRoomType(@PathVariable Long hotelId, @PathVariable Long roomTypeId) {
-        RoomTypeResponse roomType = roomTypeRepository.findById(hotelId, roomTypeId);
-        if (roomType == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(roomType);
+        RoomTypeInfoResult r = roomTypeService.findById(hotelId, roomTypeId);
+        return ResponseEntity.ok(RoomTypeResponse.from(r));
     }
 
     @PostMapping
     public ResponseEntity<RoomTypeResponse> createRoomType(@PathVariable Long hotelId, @Valid @RequestBody RoomTypeCreateRequest roomTypeCreateRequest) {
-        RoomTypeResponse createdRoomType = roomTypeRepository.save(hotelId, roomTypeCreateRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdRoomType);
+        RoomTypeCreateCommand cmd = new RoomTypeCreateCommand(
+                roomTypeCreateRequest.getName(),
+                roomTypeCreateRequest.getDescription(),
+                roomTypeCreateRequest.getMaxOccupancy(),
+                roomTypeCreateRequest.getStandardOccupancy(),
+                roomTypeCreateRequest.getViewType(),
+                roomTypeCreateRequest.getBedType()
+        );
+        RoomTypeInfoResult created = roomTypeService.create(hotelId, cmd);
+        return ResponseEntity.status(HttpStatus.CREATED).body(RoomTypeResponse.from(created));
     }
 
     @PutMapping("/{roomTypeId}")
     public ResponseEntity<RoomTypeResponse> updateRoomType(@PathVariable Long hotelId, @PathVariable Long roomTypeId, @Valid @RequestBody RoomTypeUpdateRequest roomTypeUpdateRequest) {
-        RoomTypeResponse roomType = roomTypeRepository.findById(hotelId, roomTypeId);
-        if (roomType == null) {
-            return ResponseEntity.notFound().build();
-        }
-        roomType = roomTypeRepository.update(hotelId, roomTypeId, roomTypeUpdateRequest);
-        return ResponseEntity.ok(roomType);
+        RoomTypeCreateCommand cmd = new RoomTypeCreateCommand(
+                roomTypeUpdateRequest.getName(),
+                roomTypeUpdateRequest.getDescription(),
+                roomTypeUpdateRequest.getMaxOccupancy(),
+                roomTypeUpdateRequest.getStandardOccupancy(),
+                roomTypeUpdateRequest.getViewType(),
+                roomTypeUpdateRequest.getBedType()
+        );
+        RoomTypeInfoResult updated = roomTypeService.update(hotelId, roomTypeId, cmd);
+        return ResponseEntity.ok(RoomTypeResponse.from(updated));
     }
 
     @DeleteMapping("/{roomTypeId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteRoomType(@PathVariable Long hotelId, @PathVariable Long roomTypeId) {
-        roomTypeRepository.delete(roomTypeId);
+        roomTypeService.deleteById(hotelId, roomTypeId);
     }
 }
