@@ -1,12 +1,11 @@
 package dev.muho.hotel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.muho.hotel.domain.promotion.DiscountType;
-import dev.muho.hotel.domain.promotion.FakePromotionRepository;
+import dev.muho.hotel.domain.promotion.entity.DiscountType;
 import dev.muho.hotel.domain.promotion.PromotionController;
-import dev.muho.hotel.domain.promotion.dto.PromotionCreateRequest;
-import dev.muho.hotel.domain.promotion.dto.PromotionResponse;
-import dev.muho.hotel.domain.promotion.dto.PromotionUpdateRequest;
+import dev.muho.hotel.domain.promotion.dto.api.PromotionCreateRequest;
+import dev.muho.hotel.domain.promotion.dto.api.PromotionResponse;
+import dev.muho.hotel.domain.promotion.dto.api.PromotionUpdateRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

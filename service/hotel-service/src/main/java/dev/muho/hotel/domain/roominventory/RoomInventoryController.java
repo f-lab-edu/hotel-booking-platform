@@ -3,18 +3,15 @@ package dev.muho.hotel.domain.roominventory;
 import dev.muho.hotel.domain.roominventory.dto.RoomInventoryBulkUpdateRequest;
 import dev.muho.hotel.domain.roominventory.dto.RoomInventoryResponse;
 import dev.muho.hotel.domain.roominventory.dto.RoomInventoryUpdateRequest;
+import dev.muho.hotel.domain.roominventory.dto.command.RoomInventoryBulkUpdateCommand;
+import dev.muho.hotel.domain.roominventory.dto.command.RoomInventoryUpdateCommand;
+import dev.muho.hotel.domain.roominventory.service.RoomInventoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
@@ -23,22 +20,32 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class RoomInventoryController {
 
-    private final FakeRoomInventoryRepository roomInventoryRepository;
+    private final RoomInventoryService service;
 
     @GetMapping
     public Page<RoomInventoryResponse> getInventories(@PathVariable Long roomTypeId, Pageable pageable) {
-        return roomInventoryRepository.findAll(roomTypeId, pageable);
+        return service.search(roomTypeId, pageable).map(RoomInventoryResponse::from);
     }
 
     @PutMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void bulkUpdateInventory(@PathVariable Long roomTypeId, @Valid @RequestBody RoomInventoryBulkUpdateRequest roomInventoryBulkUpdateRequest) {
-        roomInventoryRepository.bulkUpdate(roomTypeId, roomInventoryBulkUpdateRequest);
+        RoomInventoryBulkUpdateCommand cmd = new RoomInventoryBulkUpdateCommand(
+                roomInventoryBulkUpdateRequest.getStartDate(),
+                roomInventoryBulkUpdateRequest.getEndDate(),
+                roomInventoryBulkUpdateRequest.getTotalRooms(),
+                roomInventoryBulkUpdateRequest.getAvailableRooms()
+        );
+        service.bulkUpdate(roomTypeId, cmd);
     }
 
     @PutMapping("/{date}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateInventory(@PathVariable Long roomTypeId, @PathVariable LocalDate date, @Valid @RequestBody RoomInventoryUpdateRequest roomInventoryUpdateRequest) {
-        roomInventoryRepository.update(roomTypeId, date, roomInventoryUpdateRequest);
+        RoomInventoryUpdateCommand cmd = new RoomInventoryUpdateCommand(
+                roomInventoryUpdateRequest.getTotalRooms(),
+                roomInventoryUpdateRequest.getAvailableRooms()
+        );
+        service.update(roomTypeId, date, cmd);
     }
 }

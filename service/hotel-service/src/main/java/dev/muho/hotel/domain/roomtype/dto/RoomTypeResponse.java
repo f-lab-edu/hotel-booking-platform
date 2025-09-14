@@ -1,5 +1,6 @@
 package dev.muho.hotel.domain.roomtype.dto;
 
+import dev.muho.hotel.domain.roomtype.dto.command.RoomTypeInfoResult;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -14,4 +15,17 @@ public class RoomTypeResponse {
     private Integer standardOccupancy;
     private String viewType;
     private String bedType;
+
+    public static RoomTypeResponse from(RoomTypeInfoResult r) {
+        return new RoomTypeResponse(
+                r.id(),
+                r.hotelId(),
+                r.name(),
+                r.description(),
+                r.maxOccupancy(),
+                r.standardOccupancy(),
+                r.viewType(),
+                r.bedType()
+        );
+    }
 }

@@ -1,6 +1,6 @@
 package dev.muho.hotel.domain.ratecalendar.dto;
 
-import dev.muho.hotel.domain.ratecalendar.AdjustmentType;
+import dev.muho.hotel.domain.ratecalendar.entity.AdjustmentType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

@@ -1,10 +1,9 @@
 package dev.muho.hotel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.muho.hotel.domain.hotel.FakeHotelRepository;
 import dev.muho.hotel.domain.hotel.HotelController;
-import dev.muho.hotel.domain.hotel.dto.HotelCreateRequest;
-import dev.muho.hotel.domain.hotel.dto.HotelUpdateRequest;
+import dev.muho.hotel.domain.hotel.dto.api.HotelCreateRequest;
+import dev.muho.hotel.domain.hotel.dto.api.HotelUpdateRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
