@@ -36,12 +36,14 @@ public class RoomInventoryServiceImpl implements RoomInventoryService {
 
         List<RoomInventory> toSave = new ArrayList<>();
         for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            // capture immutable reference for lambdas
+            LocalDate current = date;
             // find existing inventory for date
-            repository.findByRoomTypeIdAndDate(roomTypeId, date).ifPresentOrElse(existing -> {
+            repository.findByRoomTypeIdAndDate(roomTypeId, current).ifPresentOrElse(existing -> {
                 existing.update(command.totalRooms(), command.availableRooms());
                 repository.update(existing.getId(), existing);
             }, () -> {
-                RoomInventory created = RoomInventory.of(roomTypeId, date, command.totalRooms(), command.availableRooms());
+                RoomInventory created = RoomInventory.of(roomTypeId, current, command.totalRooms(), command.availableRooms());
                 repository.save(created);
             });
         }
@@ -59,4 +61,3 @@ public class RoomInventoryServiceImpl implements RoomInventoryService {
         });
     }
 }
-
