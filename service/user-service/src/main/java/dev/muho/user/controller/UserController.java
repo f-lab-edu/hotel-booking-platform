@@ -5,7 +5,7 @@ import dev.muho.user.dto.api.UserPasswordChangeRequest;
 import dev.muho.user.dto.api.UserResponse;
 import dev.muho.user.dto.api.UserRoleUpdateRequest;
 import dev.muho.user.dto.api.UserSignupRequest;
-import dev.muho.user.dto.api.UserUpdateRequest;
+import dev.muho.user.dto.api.UserProfileUpdateRequest;
 import dev.muho.user.dto.command.UserCreateCommand;
 import dev.muho.user.dto.command.UserPasswordChangeCommand;
 import dev.muho.user.dto.command.UserProfileUpdateCommand;
@@ -53,19 +53,14 @@ public class UserController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse create(@Valid @RequestBody UserSignupRequest request) {
-        UserCreateCommand command = new UserCreateCommand(
-                request.getEmail(),
-                request.getPassword(),
-                request.getName(),
-                request.getPhone()
-        );
+        UserCreateCommand command = UserCreateCommand.from(request);
         return UserResponse.from(userService.create(command));
     }
 
     // 내 프로필 수정
     @PatchMapping("/me")
-    public UserResponse update(@Valid @RequestBody UserUpdateRequest request) {
-        UserProfileUpdateCommand command = new UserProfileUpdateCommand(request.getName(), request.getPhone());
+    public UserResponse update(@Valid @RequestBody UserProfileUpdateRequest request) {
+        UserProfileUpdateCommand command = UserProfileUpdateCommand.from(request);
         return UserResponse.from(userService.updateProfile(currentUserId(), command));
     }
 
@@ -73,7 +68,7 @@ public class UserController {
     @PatchMapping("/me/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void changePassword(@Valid @RequestBody UserPasswordChangeRequest request) {
-        UserPasswordChangeCommand command = new UserPasswordChangeCommand(request.getCurrentPassword(), request.getNewPassword());
+        UserPasswordChangeCommand command = UserPasswordChangeCommand.from(request);
         userService.changePassword(currentUserId(), command);
     }
 

@@ -2,7 +2,10 @@ package dev.muho.user.service;
 
 import dev.muho.user.dto.api.LoginRequest;
 import dev.muho.user.dto.api.TokenRefreshRequest;
+import dev.muho.user.dto.command.AuthLoginCommand;
+import dev.muho.user.dto.command.AuthLogoutCommand;
 import dev.muho.user.dto.command.AuthResult;
+import dev.muho.user.dto.command.TokenRefreshCommand;
 import dev.muho.user.error.AuthenticationFailedException;
 import dev.muho.user.repository.RefreshTokenStore;
 import dev.muho.user.entity.User;
@@ -22,14 +25,14 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenStore refreshTokenStore;
 
     @Override
-    public AuthResult login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
+    public AuthResult login(AuthLoginCommand command) {
+        User user = userRepository.findByEmail(command.email())
                 .orElseThrow(AuthenticationFailedException::new);
 
         if (!user.isActive()) {
             throw new AuthenticationFailedException();
         }
-        if (!passwordHasher.matches(request.getPassword(), user.getPassword())) {
+        if (!passwordHasher.matches(command.password(), user.getPassword())) {
             throw new AuthenticationFailedException();
         }
 
@@ -41,12 +44,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResult refresh(TokenRefreshRequest request) {
+    public AuthResult refresh(TokenRefreshCommand command) {
         Long userId = 1L; // TODO: 인증 정보에서 사용자 ID 추출
         User user = userRepository.findById(userId)
                 .orElseThrow(AuthenticationFailedException::new);
 
-        String oldRefresh = request.getRefreshToken();
+        String oldRefresh = command.refreshToken();
         Long userIdFromRefreshToken = refreshTokenStore.getUserId(oldRefresh)
                 .orElseThrow(AuthenticationFailedException::new);
 
@@ -71,9 +74,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void logout(TokenRefreshRequest request) {
-        if (request == null) return;
-        String refresh = request.getRefreshToken();
+    public void logout(AuthLogoutCommand command) {
+        if (command == null) return;
+        String refresh = command.refreshToken();
         if (refresh == null || refresh.isBlank()) return;
 
         refreshTokenStore.revoke(refresh);

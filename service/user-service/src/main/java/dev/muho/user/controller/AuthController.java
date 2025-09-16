@@ -2,8 +2,12 @@ package dev.muho.user.controller;
 
 import dev.muho.user.dto.api.AuthResponse;
 import dev.muho.user.dto.api.LoginRequest;
+import dev.muho.user.dto.api.LogoutRequest;
 import dev.muho.user.dto.api.TokenRefreshRequest;
+import dev.muho.user.dto.command.AuthLoginCommand;
+import dev.muho.user.dto.command.AuthLogoutCommand;
 import dev.muho.user.dto.command.AuthResult;
+import dev.muho.user.dto.command.TokenRefreshCommand;
 import dev.muho.user.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,19 +24,22 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResult authResult = authService.login(request);
-        return ResponseEntity.ok(AuthResponse.of(authResult));
+        AuthLoginCommand command = AuthLoginCommand.from(request);
+        AuthResult authResult = authService.login(command);
+        return ResponseEntity.ok(AuthResponse.from(authResult));
     }
 
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void logout(@Valid @RequestBody TokenRefreshRequest request) {
-        authService.logout(request);
+    public void logout(@Valid @RequestBody LogoutRequest request) {
+        AuthLogoutCommand command = AuthLogoutCommand.from(request);
+        authService.logout(command);
     }
 
     @PostMapping("/token/refresh")
     public AuthResponse refresh(@Valid @RequestBody TokenRefreshRequest request) {
-        AuthResult authResult = authService.refresh(request);
-        return AuthResponse.of(authResult);
+        TokenRefreshCommand command = TokenRefreshCommand.from(request);
+        AuthResult authResult = authService.refresh(command);
+        return AuthResponse.from(authResult);
     }
 }

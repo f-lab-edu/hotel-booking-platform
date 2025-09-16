@@ -2,19 +2,17 @@ package dev.muho.user.dto.api;
 
 import dev.muho.user.dto.command.AuthResult;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-@Builder(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class AuthResponse {
     private String accessToken;
     private String refreshToken;
 
-    public static AuthResponse of(AuthResult authResult) {
-        return AuthResponse.builder()
-                .accessToken(authResult.accessToken())
-                .refreshToken(authResult.refreshToken())
-                .build();
+    public static AuthResponse from(AuthResult authResult) {
+        return new AuthResponse(authResult.accessToken(), authResult.refreshToken());
     }
 }
