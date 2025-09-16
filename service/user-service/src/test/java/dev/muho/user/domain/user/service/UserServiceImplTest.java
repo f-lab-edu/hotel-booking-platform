@@ -1,13 +1,19 @@
 package dev.muho.user.domain.user.service;
 
-import dev.muho.user.domain.user.dto.command.*;
-import dev.muho.user.domain.user.entity.User;
-import dev.muho.user.domain.user.entity.UserRole;
-import dev.muho.user.domain.user.entity.UserStatus;
-import dev.muho.user.domain.user.error.InvalidUserInputException;
-import dev.muho.user.domain.user.error.UserAlreadyExistsException;
-import dev.muho.user.domain.user.error.UserNotFoundException;
-import dev.muho.user.domain.user.repository.UserRepository;
+import dev.muho.user.dto.command.UserCreateCommand;
+import dev.muho.user.dto.command.UserInfoResult;
+import dev.muho.user.dto.command.UserPasswordChangeCommand;
+import dev.muho.user.dto.command.UserProfileUpdateCommand;
+import dev.muho.user.dto.command.UserSearchCondition;
+import dev.muho.user.entity.User;
+import dev.muho.user.entity.UserRole;
+import dev.muho.user.entity.UserStatus;
+import dev.muho.user.error.InvalidUserInputException;
+import dev.muho.user.error.UserAlreadyExistsException;
+import dev.muho.user.error.UserNotFoundException;
+import dev.muho.user.repository.UserRepository;
+import dev.muho.user.service.PasswordHasher;
+import dev.muho.user.service.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,13 +1,15 @@
 package dev.muho.user.domain.auth.service;
 
-import dev.muho.user.domain.auth.dto.api.LoginRequest;
-import dev.muho.user.domain.auth.dto.api.TokenRefreshRequest;
-import dev.muho.user.domain.auth.dto.command.AuthResult;
-import dev.muho.user.domain.auth.error.AuthenticationFailedException;
-import dev.muho.user.domain.auth.repository.RefreshTokenStore;
-import dev.muho.user.domain.user.entity.User;
-import dev.muho.user.domain.user.repository.UserRepository;
-import dev.muho.user.domain.user.service.PasswordHasher;
+import dev.muho.user.dto.api.LoginRequest;
+import dev.muho.user.dto.api.TokenRefreshRequest;
+import dev.muho.user.dto.command.AuthResult;
+import dev.muho.user.error.AuthenticationFailedException;
+import dev.muho.user.repository.RefreshTokenStore;
+import dev.muho.user.entity.User;
+import dev.muho.user.repository.UserRepository;
+import dev.muho.user.service.PasswordHasher;
+import dev.muho.user.service.AuthServiceImpl;
+import dev.muho.user.service.TokenProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
