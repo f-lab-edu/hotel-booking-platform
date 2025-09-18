@@ -19,7 +19,8 @@ public enum ErrorCode {
     INVALID_USER_ROLE(HttpStatus.BAD_REQUEST, "U005", "잘못된 사용자 역할입니다."),
 
     // auth
-    AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "A001", "인증에 실패했습니다.");
+    AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "A001", "인증에 실패했습니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "A002", "유효하지 않은 토큰입니다.");
 
     // field
     private final HttpStatus status;

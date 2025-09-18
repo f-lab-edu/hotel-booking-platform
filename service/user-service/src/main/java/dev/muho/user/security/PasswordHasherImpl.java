@@ -1,4 +1,4 @@
-package dev.muho.user.service;
+package dev.muho.user.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;

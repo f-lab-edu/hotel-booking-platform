@@ -8,11 +8,13 @@ import dev.muho.user.dto.command.AuthLoginCommand;
 import dev.muho.user.dto.command.AuthLogoutCommand;
 import dev.muho.user.dto.command.AuthResult;
 import dev.muho.user.dto.command.TokenRefreshCommand;
+import dev.muho.user.security.UserPrincipal;
 import dev.muho.user.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -37,9 +39,12 @@ public class AuthController {
     }
 
     @PostMapping("/token/refresh")
-    public AuthResponse refresh(@Valid @RequestBody TokenRefreshRequest request) {
+    public AuthResponse refresh(
+            @Valid @RequestBody TokenRefreshRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        Long userId = userPrincipal.id();
         TokenRefreshCommand command = TokenRefreshCommand.from(request);
-        AuthResult authResult = authService.refresh(command);
+        AuthResult authResult = authService.refresh(userId, command);
         return AuthResponse.from(authResult);
     }
 }

@@ -12,7 +12,7 @@ import dev.muho.user.error.InvalidUserInputException;
 import dev.muho.user.error.UserAlreadyExistsException;
 import dev.muho.user.error.UserNotFoundException;
 import dev.muho.user.repository.UserRepository;
-import dev.muho.user.service.PasswordHasher;
+import dev.muho.user.security.PasswordHasher;
 import dev.muho.user.service.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -206,4 +206,3 @@ class UserServiceImplTest {
                 .containsExactlyInAnyOrder("a@example.com", "b@example.com");
     }
 }
-

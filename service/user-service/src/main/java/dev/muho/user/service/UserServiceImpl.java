@@ -11,6 +11,7 @@ import dev.muho.user.error.InvalidUserInputException;
 import dev.muho.user.error.UserAlreadyExistsException;
 import dev.muho.user.error.UserNotFoundException;
 import dev.muho.user.repository.UserRepository;
+import dev.muho.user.security.PasswordHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

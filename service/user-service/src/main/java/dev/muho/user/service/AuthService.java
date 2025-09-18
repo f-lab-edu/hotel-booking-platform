@@ -22,7 +22,7 @@ public interface AuthService {
     /**
      * 리프레시 토큰을 사용한 재발급 (회전 포함 가능)
      */
-    AuthResult refresh(TokenRefreshCommand command);
+    AuthResult refresh(Long userId, TokenRefreshCommand command);
 
     /**
      * 로그아웃: 서버 측에 저장된 refresh 토큰을 무효화(삭제)한다.

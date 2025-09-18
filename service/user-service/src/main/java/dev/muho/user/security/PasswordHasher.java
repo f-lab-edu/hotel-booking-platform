@@ -1,4 +1,4 @@
-package dev.muho.user.service;
+package dev.muho.user.security;
 
 /**
  * 비밀번호 해싱 / 검증 포트.
@@ -29,3 +29,4 @@ public interface PasswordHasher {
      */
     default boolean needsRehash(String encodedPassword) { return false; }
 }
+

@@ -12,12 +12,14 @@ import dev.muho.user.dto.command.UserProfileUpdateCommand;
 import dev.muho.user.dto.command.UserSearchCondition;
 import dev.muho.user.entity.UserRole;
 import dev.muho.user.entity.UserStatus;
+import dev.muho.user.security.UserPrincipal;
 import dev.muho.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -43,10 +45,11 @@ public class UserController {
         return UserResponse.from(userService.findById(userId));
     }
 
-    // 내 정보 조회 (임시: 고정 ID 사용)
+    // 내 정보 조회
     @GetMapping("/me")
-    public UserResponse me() {
-        return UserResponse.from(userService.findById(currentUserId()));
+    public UserResponse me(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        Long userId = userPrincipal.id();
+        return UserResponse.from(userService.findById(userId));
     }
 
     // 회원 가입
@@ -59,17 +62,23 @@ public class UserController {
 
     // 내 프로필 수정
     @PatchMapping("/me")
-    public UserResponse update(@Valid @RequestBody UserProfileUpdateRequest request) {
+    public UserResponse update(
+            @Valid @RequestBody UserProfileUpdateRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         UserProfileUpdateCommand command = UserProfileUpdateCommand.from(request);
-        return UserResponse.from(userService.updateProfile(currentUserId(), command));
+        Long userId = userPrincipal.id();
+        return UserResponse.from(userService.updateProfile(userId, command));
     }
 
     // 내 비밀번호 변경
     @PatchMapping("/me/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void changePassword(@Valid @RequestBody UserPasswordChangeRequest request) {
+    public void changePassword(
+            @Valid @RequestBody UserPasswordChangeRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         UserPasswordChangeCommand command = UserPasswordChangeCommand.from(request);
-        userService.changePassword(currentUserId(), command);
+        Long userId = userPrincipal.id();
+        userService.changePassword(userId, command);
     }
 
     // 역할 변경 (관리자 용도 가정)
@@ -81,8 +90,9 @@ public class UserController {
     // 내 탈퇴
     @DeleteMapping("/me")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete() {
-        userService.withdraw(currentUserId());
+    public void delete(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        Long userId = userPrincipal.id();
+        userService.withdraw(userId);
     }
 
     // 특정 사용자 탈퇴 (관리자)
@@ -97,10 +107,5 @@ public class UserController {
     public EmailExistResponse exists(@RequestParam String email) {
         boolean exists = userService.existsByEmail(email);
         return EmailExistResponse.of(email, exists);
-    }
-
-    // TODO: 실제 인증 연동하여 현재 사용자 ID 추출하도록 수정 필요
-    private Long currentUserId() {
-        return 1L; // placeholder
     }
 }

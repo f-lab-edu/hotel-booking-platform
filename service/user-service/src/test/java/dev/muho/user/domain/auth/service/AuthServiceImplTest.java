@@ -8,12 +8,13 @@ import dev.muho.user.dto.command.AuthLogoutCommand;
 import dev.muho.user.dto.command.AuthResult;
 import dev.muho.user.dto.command.TokenRefreshCommand;
 import dev.muho.user.error.AuthenticationFailedException;
-import dev.muho.user.repository.RefreshTokenStore;
+import dev.muho.user.error.InvalidTokenException;
 import dev.muho.user.entity.User;
+import dev.muho.user.security.JwtProvider;
 import dev.muho.user.repository.UserRepository;
-import dev.muho.user.service.PasswordHasher;
+import dev.muho.user.security.PasswordHasher;
 import dev.muho.user.service.AuthServiceImpl;
-import dev.muho.user.service.TokenProvider;
+import dev.muho.user.redis.RefreshTokenService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,9 +36,9 @@ class AuthServiceImplTest {
     @Mock
     PasswordHasher passwordHasher;
     @Mock
-    TokenProvider tokenProvider;
+    JwtProvider jwtProvider;
     @Mock
-    RefreshTokenStore refreshTokenStore;
+    RefreshTokenService refreshTokenService;
 
     @InjectMocks
     AuthServiceImpl authService;
@@ -50,8 +51,8 @@ class AuthServiceImplTest {
         User user = User.createNewUser("a@b.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678");
         given(userRepository.findByEmail("a@b.com")).willReturn(Optional.of(user));
         given(passwordHasher.matches("password123", user.getPassword())).willReturn(true);
-        given(tokenProvider.createAccessToken(user)).willReturn("access-token");
-        given(tokenProvider.createRefreshToken(user)).willReturn("refresh-token");
+        given(jwtProvider.createAccessToken(user)).willReturn("access-token");
+        given(jwtProvider.createRefreshToken(user)).willReturn("refresh-token");
 
         AuthResult res = authService.login(command);
 
@@ -103,15 +104,15 @@ class AuthServiceImplTest {
         // AuthServiceImpl currently uses hardcoded userId = 1L
         User user = User.createNewUser("u@u.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678");
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
-        given(refreshTokenStore.getUserId(oldRefresh)).willReturn(Optional.of(1L));
-        given(tokenProvider.createAccessToken(user)).willReturn("new-access");
-        given(tokenProvider.createRefreshToken(user)).willReturn("new-refresh");
+        given(refreshTokenService.findUserIdByToken(oldRefresh)).willReturn(1L);
+        given(jwtProvider.createAccessToken(user)).willReturn("new-access");
+        given(jwtProvider.createRefreshToken(user)).willReturn("new-refresh");
 
-        AuthResult res = authService.refresh(command);
+        AuthResult res = authService.refresh(1L, command);
 
         assertThat(res.accessToken()).isEqualTo("new-access");
         assertThat(res.refreshToken()).isEqualTo("new-refresh");
-        verify(refreshTokenStore).rotate(1L, oldRefresh, "new-refresh");
+        verify(refreshTokenService).rotateRefreshToken(1L, oldRefresh, "new-refresh");
     }
 
     @Test
@@ -120,9 +121,9 @@ class AuthServiceImplTest {
         TokenRefreshRequest req = TokenRefreshRequest.builder().refreshToken("missing").build();
         TokenRefreshCommand command = TokenRefreshCommand.from(req);
         given(userRepository.findById(1L)).willReturn(Optional.of(User.createNewUser("u@u.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678")));
-        given(refreshTokenStore.getUserId("missing")).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.refresh(command)).isInstanceOf(AuthenticationFailedException.class);
+        assertThatThrownBy(() -> refreshTokenService.findUserIdByToken("missing")).isInstanceOf(InvalidTokenException.class);
+        assertThatThrownBy(() -> authService.refresh(1L, command)).isInstanceOf(AuthenticationFailedException.class);
     }
 
     @Test
@@ -132,17 +133,17 @@ class AuthServiceImplTest {
         TokenRefreshRequest req = TokenRefreshRequest.builder().refreshToken(oldRefresh).build();
         TokenRefreshCommand command = TokenRefreshCommand.from(req);
         given(userRepository.findById(1L)).willReturn(Optional.of(User.createNewUser("u@u.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678")));
-        given(refreshTokenStore.getUserId(oldRefresh)).willReturn(Optional.of(999L));
+        given(refreshTokenService.findUserIdByToken(oldRefresh)).willReturn(999L);
 
-        assertThatThrownBy(() -> authService.refresh(command)).isInstanceOf(AuthenticationFailedException.class);
-        verify(refreshTokenStore).revoke(oldRefresh);
+        assertThatThrownBy(() -> authService.refresh(1L, command)).isInstanceOf(AuthenticationFailedException.class);
+        verify(refreshTokenService).deleteRefreshToken(oldRefresh);
     }
 
     @Test
     @DisplayName("logout: null 요청 무시")
     void logout_nullRequest() {
         authService.logout(null);
-        verifyNoInteractions(refreshTokenStore);
+        verifyNoInteractions(refreshTokenService);
     }
 
     @Test
@@ -151,7 +152,7 @@ class AuthServiceImplTest {
         LogoutRequest req = LogoutRequest.builder().refreshToken("").build();
         AuthLogoutCommand command = AuthLogoutCommand.from(req);
         authService.logout(command);
-        verifyNoInteractions(refreshTokenStore);
+        verifyNoInteractions(refreshTokenService);
     }
 
     @Test
@@ -160,7 +161,6 @@ class AuthServiceImplTest {
         LogoutRequest req = LogoutRequest.builder().refreshToken("to-revoke").build();
         AuthLogoutCommand command = AuthLogoutCommand.from(req);
         authService.logout(command);
-        verify(refreshTokenStore).revoke("to-revoke");
+        verify(refreshTokenService).deleteRefreshToken("to-revoke");
     }
 }
-
