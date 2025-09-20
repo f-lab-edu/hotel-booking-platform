@@ -13,7 +13,7 @@ public record UserCreateCommand(
     String email,
 
     @NotBlank
-    @Size(min = 30)
+    @Size(min = 8)
     String rawPassword,
 
     @NotBlank
