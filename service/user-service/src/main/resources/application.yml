@@ -21,7 +21,7 @@ spring:
 
 jwt:
   # 64-byte Base64-encoded secret key
-  secret-key: ${JWT_SCRET_KEY}
+  secret-key: ${JWT_SECRET_KEY}
   # Access Token validity period (1 hour = 3600000 ms)
   access-token-validity-in-ms: 3600000
   # Refresh Token validity period (14 days = 1209600000 ms)
