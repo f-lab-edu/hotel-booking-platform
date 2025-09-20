@@ -33,9 +33,12 @@ public class AuthController {
 
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void logout(@Valid @RequestBody LogoutRequest request) {
+    public void logout(
+            @Valid @RequestBody LogoutRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        Long userId = userPrincipal.id();
         AuthLogoutCommand command = AuthLogoutCommand.from(request);
-        authService.logout(command);
+        authService.logout(userId, command);
     }
 
     @PostMapping("/token/refresh")

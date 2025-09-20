@@ -55,7 +55,6 @@ public class AuthServiceImpl implements AuthService {
             refreshTokenService.deleteRefreshToken(oldRefresh);
             throw new AuthenticationFailedException();
         }
-
         if (!user.isActive()) {
             refreshTokenService.deleteRefreshToken(oldRefresh);
             throw new AuthenticationFailedException();
@@ -70,10 +69,25 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void logout(AuthLogoutCommand command) {
+    public void logout(Long userId, AuthLogoutCommand command) {
         if (command == null) return;
-        String refresh = command.refreshToken();
-        if (refresh == null || refresh.isBlank()) return;
-        refreshTokenService.deleteRefreshToken(refresh);
+        String refreshToken = command.refreshToken();
+        if (refreshToken == null || refreshToken.isBlank()) return;
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(AuthenticationFailedException::new);
+
+        Long userIdFromRefreshToken = refreshTokenService.findUserIdByToken(refreshToken);
+
+        if (!userId.equals(userIdFromRefreshToken)) {
+            refreshTokenService.deleteRefreshToken(refreshToken);
+            throw new AuthenticationFailedException();
+        }
+        if (!user.isActive()) {
+            refreshTokenService.deleteRefreshToken(refreshToken);
+            throw new AuthenticationFailedException();
+        }
+
+        refreshTokenService.deleteRefreshToken(refreshToken);
     }
 }

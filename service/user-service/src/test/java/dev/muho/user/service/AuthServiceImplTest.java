@@ -1,4 +1,4 @@
-package dev.muho.user.domain.auth.service;
+package dev.muho.user.service;
 
 import dev.muho.user.dto.api.LoginRequest;
 import dev.muho.user.dto.api.LogoutRequest;
@@ -13,7 +13,6 @@ import dev.muho.user.entity.User;
 import dev.muho.user.security.JwtProvider;
 import dev.muho.user.repository.UserRepository;
 import dev.muho.user.security.PasswordHasher;
-import dev.muho.user.service.AuthServiceImpl;
 import dev.muho.user.redis.RefreshTokenService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -121,9 +120,9 @@ class AuthServiceImplTest {
         TokenRefreshRequest req = TokenRefreshRequest.builder().refreshToken("missing").build();
         TokenRefreshCommand command = TokenRefreshCommand.from(req);
         given(userRepository.findById(1L)).willReturn(Optional.of(User.createNewUser("u@u.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678")));
+        given(refreshTokenService.findUserIdByToken("missing")).willThrow(new InvalidTokenException());
 
-        assertThatThrownBy(() -> refreshTokenService.findUserIdByToken("missing")).isInstanceOf(InvalidTokenException.class);
-        assertThatThrownBy(() -> authService.refresh(1L, command)).isInstanceOf(AuthenticationFailedException.class);
+        assertThatThrownBy(() -> authService.refresh(1L, command)).isInstanceOf(InvalidTokenException.class);
     }
 
     @Test
@@ -142,7 +141,7 @@ class AuthServiceImplTest {
     @Test
     @DisplayName("logout: null 요청 무시")
     void logout_nullRequest() {
-        authService.logout(null);
+        authService.logout(0L, null);
         verifyNoInteractions(refreshTokenService);
     }
 
@@ -151,16 +150,20 @@ class AuthServiceImplTest {
     void logout_blankToken() {
         LogoutRequest req = LogoutRequest.builder().refreshToken("").build();
         AuthLogoutCommand command = AuthLogoutCommand.from(req);
-        authService.logout(command);
+        authService.logout(0L, command);
         verifyNoInteractions(refreshTokenService);
     }
 
     @Test
     @DisplayName("logout: 정상 revoke 호출")
     void logout_success() {
-        LogoutRequest req = LogoutRequest.builder().refreshToken("to-revoke").build();
+        String refreshToken = "to-revoke";
+        LogoutRequest req = LogoutRequest.builder().refreshToken(refreshToken).build();
         AuthLogoutCommand command = AuthLogoutCommand.from(req);
-        authService.logout(command);
-        verify(refreshTokenService).deleteRefreshToken("to-revoke");
+        given(userRepository.findById(1L)).willReturn(Optional.of(User.createNewUser("u@u.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678")));
+        given(refreshTokenService.findUserIdByToken(refreshToken)).willReturn(1L);
+
+        authService.logout(1L, command);
+        verify(refreshTokenService).deleteRefreshToken(refreshToken);
     }
 }

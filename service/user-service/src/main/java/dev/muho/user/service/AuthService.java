@@ -28,5 +28,5 @@ public interface AuthService {
      * 로그아웃: 서버 측에 저장된 refresh 토큰을 무효화(삭제)한다.
      * 클라이언트는 로컬에서 토큰을 제거해야 함.
      */
-    void logout(AuthLogoutCommand command);
+    void logout(Long userId, AuthLogoutCommand command);
 }

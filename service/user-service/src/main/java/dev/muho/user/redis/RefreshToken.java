@@ -1,6 +1,6 @@
 package dev.muho.user.redis;
 
-import jakarta.persistence.Id;
+import org.springframework.data.annotation.Id;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisHash;

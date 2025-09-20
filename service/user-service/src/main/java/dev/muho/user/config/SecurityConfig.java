@@ -44,6 +44,9 @@ public class SecurityConfig {
 
                 // 4. 엔드포인트별 접근 규칙 설정
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/v1/users").permitAll() // 회원가입 허용
+                        .requestMatchers("/v1/users/exists").permitAll() // 이메일 중복 체크 허용
+                        .requestMatchers("/v1/auth/login").permitAll() // 로그인 허용
                         .anyRequest().authenticated())
 
                 // 5. JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가

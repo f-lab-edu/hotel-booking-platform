@@ -1,4 +1,4 @@
-package dev.muho.user.domain.user.service;
+package dev.muho.user.service;
 
 import dev.muho.user.dto.command.UserCreateCommand;
 import dev.muho.user.dto.command.UserInfoResult;
@@ -13,7 +13,6 @@ import dev.muho.user.error.UserAlreadyExistsException;
 import dev.muho.user.error.UserNotFoundException;
 import dev.muho.user.repository.UserRepository;
 import dev.muho.user.security.PasswordHasher;
-import dev.muho.user.service.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
