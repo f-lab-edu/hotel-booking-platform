@@ -8,6 +8,9 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ErrorCode {
 
+    // api
+    INVALID_API_INPUT(HttpStatus.BAD_REQUEST, "API001", "입력값이 유효하지 않습니다."),
+
     // user
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "U002", "접근이 거부되었습니다."),
@@ -16,7 +19,8 @@ public enum ErrorCode {
     INVALID_USER_ROLE(HttpStatus.BAD_REQUEST, "U005", "잘못된 사용자 역할입니다."),
 
     // auth
-    AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "A001", "인증에 실패했습니다.");
+    AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "A001", "인증에 실패했습니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "A002", "유효하지 않은 토큰입니다.");
 
     // field
     private final HttpStatus status;

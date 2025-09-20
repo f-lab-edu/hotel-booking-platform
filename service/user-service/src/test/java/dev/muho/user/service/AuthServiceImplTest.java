@@ -1,0 +1,169 @@
+package dev.muho.user.service;
+
+import dev.muho.user.dto.api.LoginRequest;
+import dev.muho.user.dto.api.LogoutRequest;
+import dev.muho.user.dto.api.TokenRefreshRequest;
+import dev.muho.user.dto.command.AuthLoginCommand;
+import dev.muho.user.dto.command.AuthLogoutCommand;
+import dev.muho.user.dto.command.AuthResult;
+import dev.muho.user.dto.command.TokenRefreshCommand;
+import dev.muho.user.error.AuthenticationFailedException;
+import dev.muho.user.error.InvalidTokenException;
+import dev.muho.user.entity.User;
+import dev.muho.user.security.JwtProvider;
+import dev.muho.user.repository.UserRepository;
+import dev.muho.user.security.PasswordHasher;
+import dev.muho.user.redis.RefreshTokenService;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class AuthServiceImplTest {
+
+    @Mock
+    UserRepository userRepository;
+    @Mock
+    PasswordHasher passwordHasher;
+    @Mock
+    JwtProvider jwtProvider;
+    @Mock
+    RefreshTokenService refreshTokenService;
+
+    @InjectMocks
+    AuthServiceImpl authService;
+
+    @Test
+    @DisplayName("login: 성공")
+    void login_success() {
+        LoginRequest req = LoginRequest.builder().email("a@b.com").password("password123").build();
+        AuthLoginCommand command = AuthLoginCommand.from(req);
+        User user = User.createNewUser("a@b.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678");
+        given(userRepository.findByEmail("a@b.com")).willReturn(Optional.of(user));
+        given(passwordHasher.matches("password123", user.getPassword())).willReturn(true);
+        given(jwtProvider.createAccessToken(user)).willReturn("access-token");
+        given(jwtProvider.createRefreshToken(user)).willReturn("refresh-token");
+
+        AuthResult res = authService.login(command);
+
+        assertThat(res.accessToken()).isEqualTo("access-token");
+        assertThat(res.refreshToken()).isEqualTo("refresh-token");
+    }
+
+    @Test
+    @DisplayName("login: 이메일 없음 -> 예외")
+    void login_noUser() {
+        LoginRequest req = LoginRequest.builder().email("x@x.com").password("pw").build();
+        AuthLoginCommand command = AuthLoginCommand.from(req);
+        given(userRepository.findByEmail("x@x.com")).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.login(command)).isInstanceOf(AuthenticationFailedException.class);
+    }
+
+    @Test
+    @DisplayName("login: 비활성 사용자 -> 예외")
+    void login_inactive() {
+        LoginRequest req = LoginRequest.builder().email("a@b.com").password("pw").build();
+        AuthLoginCommand command = AuthLoginCommand.from(req);
+        User user = User.createNewUser("a@b.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678");
+        // withdraw to make inactive
+        user.withdraw();
+        given(userRepository.findByEmail("a@b.com")).willReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.login(command)).isInstanceOf(AuthenticationFailedException.class);
+    }
+
+    @Test
+    @DisplayName("login: 비밀번호 불일치 -> 예외")
+    void login_badPassword() {
+        LoginRequest req = LoginRequest.builder().email("a@b.com").password("wrong").build();
+        AuthLoginCommand command = AuthLoginCommand.from(req);
+        User user = User.createNewUser("a@b.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678");
+        given(userRepository.findByEmail("a@b.com")).willReturn(Optional.of(user));
+        given(passwordHasher.matches("wrong", user.getPassword())).willReturn(false);
+
+        assertThatThrownBy(() -> authService.login(command)).isInstanceOf(AuthenticationFailedException.class);
+    }
+
+    @Test
+    @DisplayName("refresh: 성공")
+    void refresh_success() {
+        String oldRefresh = "old-refresh";
+        TokenRefreshRequest req = TokenRefreshRequest.builder().refreshToken(oldRefresh).build();
+        TokenRefreshCommand command = TokenRefreshCommand.from(req);
+        // AuthServiceImpl currently uses hardcoded userId = 1L
+        User user = User.createNewUser("u@u.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678");
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        given(refreshTokenService.findUserIdByToken(oldRefresh)).willReturn(1L);
+        given(jwtProvider.createAccessToken(user)).willReturn("new-access");
+        given(jwtProvider.createRefreshToken(user)).willReturn("new-refresh");
+
+        AuthResult res = authService.refresh(1L, command);
+
+        assertThat(res.accessToken()).isEqualTo("new-access");
+        assertThat(res.refreshToken()).isEqualTo("new-refresh");
+        verify(refreshTokenService).rotateRefreshToken(1L, oldRefresh, "new-refresh");
+    }
+
+    @Test
+    @DisplayName("refresh: 토큰으로 사용자 조회 실패 -> 예외")
+    void refresh_tokenNotFound() {
+        TokenRefreshRequest req = TokenRefreshRequest.builder().refreshToken("missing").build();
+        TokenRefreshCommand command = TokenRefreshCommand.from(req);
+        given(userRepository.findById(1L)).willReturn(Optional.of(User.createNewUser("u@u.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678")));
+        given(refreshTokenService.findUserIdByToken("missing")).willThrow(new InvalidTokenException());
+
+        assertThatThrownBy(() -> authService.refresh(1L, command)).isInstanceOf(InvalidTokenException.class);
+    }
+
+    @Test
+    @DisplayName("refresh: 토큰 사용자 불일치 -> 예외 및 revoke 호출")
+    void refresh_tokenUserMismatch() {
+        String oldRefresh = "old";
+        TokenRefreshRequest req = TokenRefreshRequest.builder().refreshToken(oldRefresh).build();
+        TokenRefreshCommand command = TokenRefreshCommand.from(req);
+        given(userRepository.findById(1L)).willReturn(Optional.of(User.createNewUser("u@u.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678")));
+        given(refreshTokenService.findUserIdByToken(oldRefresh)).willReturn(999L);
+
+        assertThatThrownBy(() -> authService.refresh(1L, command)).isInstanceOf(AuthenticationFailedException.class);
+        verify(refreshTokenService).deleteRefreshToken(oldRefresh);
+    }
+
+    @Test
+    @DisplayName("logout: null 요청 무시")
+    void logout_nullRequest() {
+        authService.logout(0L, null);
+        verifyNoInteractions(refreshTokenService);
+    }
+
+    @Test
+    @DisplayName("logout: 빈 토큰 무시")
+    void logout_blankToken() {
+        LogoutRequest req = LogoutRequest.builder().refreshToken("").build();
+        AuthLogoutCommand command = AuthLogoutCommand.from(req);
+        authService.logout(0L, command);
+        verifyNoInteractions(refreshTokenService);
+    }
+
+    @Test
+    @DisplayName("logout: 정상 revoke 호출")
+    void logout_success() {
+        String refreshToken = "to-revoke";
+        LogoutRequest req = LogoutRequest.builder().refreshToken(refreshToken).build();
+        AuthLogoutCommand command = AuthLogoutCommand.from(req);
+        given(userRepository.findById(1L)).willReturn(Optional.of(User.createNewUser("u@u.com", "encoded-password-xxxxxxxxxxxxxxxxxxxxxxxxx", "name", "010-1234-5678")));
+        given(refreshTokenService.findUserIdByToken(refreshToken)).willReturn(1L);
+
+        authService.logout(1L, command);
+        verify(refreshTokenService).deleteRefreshToken(refreshToken);
+    }
+}
