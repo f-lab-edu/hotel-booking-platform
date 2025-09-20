@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  user-service:
+    build:
+      context: .
+      dockerfile: ./service/user-service/Dockerfile
+    container_name: user-service
+    ports:
+      - "${USER_SERVICE_PORT}:8080"
+    depends_on:
+      user-db:
+        condition: service_healthy
+      user-redis:
+        condition: service_healthy
+    environment:
+      # 데이터베이스 설정
+      - DB_HOST=user-db
+      - DB_NAME=${USER_DB_NAME}
+      - DB_USERNAME=${USER_DB_USERNAME}
+      - DB_PASSWORD=${USER_DB_PASSWORD}
+      # Redis 설정
+      - REDIS_HOST=user-redis
+      - REDIS_PASSWORD=${USER_REDIS_PASSWORD}
+      # JWT 설정
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+
+  user-db:
+    image: postgres:15
+    container_name: user-db
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    ports:
+      - "${USER_DB_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${USER_DB_NAME}
+      - POSTGRES_USER=${USER_DB_USERNAME}
+      - POSTGRES_PASSWORD=${USER_DB_PASSWORD}
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USERNAME} -d ${USER_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-redis:
+    image: redis:7-alpine
+    container_name: user-redis
+    ports:
+      - "${USER_REDIS_PORT}:6379"
+    volumes:
+      - user-redis-data:/data
+    command: redis-server --requirepass ${USER_REDIS_PASSWORD}
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  user-db-data:
+  user-redis-data:
