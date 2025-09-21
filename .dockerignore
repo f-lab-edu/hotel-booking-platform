@@ -1,0 +1,19 @@
+# Gradle 빌드 관련 파일
+**/.gradle
+**/build
+
+# Git 관련 파일
+.git
+.gitignore
+.gitattributes
+.github
+
+# OS 관련 파일
+.DS_Store
+
+# 민감 정보 파일
+.env
+.env.*
+
+# IDE 관련 파일
+.idea
