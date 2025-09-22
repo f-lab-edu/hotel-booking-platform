@@ -1,10 +1,11 @@
 package dev.muho.hotel.service;
 
-import dev.muho.hotel.dto.command.RoomTypeCreateCommand;
-import dev.muho.hotel.dto.command.RoomTypeInfoResult;
-import dev.muho.hotel.entity.RoomType;
-import dev.muho.hotel.error.RoomTypeNotFoundException;
-import dev.muho.hotel.repository.RoomTypeRepository;
+import dev.muho.hotellegacy.dto.command.RoomTypeCreateCommand;
+import dev.muho.hotellegacy.dto.command.RoomTypeInfoResult;
+import dev.muho.hotellegacy.entity.RoomType;
+import dev.muho.hotellegacy.error.RoomTypeNotFoundException;
+import dev.muho.hotellegacy.repository.RoomTypeRepository;
+import dev.muho.hotellegacy.service.RoomTypeServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

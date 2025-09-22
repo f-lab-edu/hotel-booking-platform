@@ -1,12 +1,13 @@
 package dev.muho.hotel.service;
 
-import dev.muho.hotel.dto.command.PromotionCreateCommand;
-import dev.muho.hotel.dto.command.PromotionInfoResult;
-import dev.muho.hotel.dto.command.PromotionUpdateCommand;
-import dev.muho.hotel.entity.Promotion;
-import dev.muho.hotel.entity.DiscountType;
-import dev.muho.hotel.error.PromotionNotFoundException;
-import dev.muho.hotel.repository.PromotionRepository;
+import dev.muho.hotellegacy.dto.command.PromotionCreateCommand;
+import dev.muho.hotellegacy.dto.command.PromotionInfoResult;
+import dev.muho.hotellegacy.dto.command.PromotionUpdateCommand;
+import dev.muho.hotellegacy.entity.Promotion;
+import dev.muho.hotellegacy.entity.DiscountType;
+import dev.muho.hotellegacy.error.PromotionNotFoundException;
+import dev.muho.hotellegacy.repository.PromotionRepository;
+import dev.muho.hotellegacy.service.PromotionServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

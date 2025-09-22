@@ -1,11 +1,12 @@
 package dev.muho.hotel.service;
 
-import dev.muho.hotel.dto.command.RateCalendarCreateCommand;
-import dev.muho.hotel.dto.command.RateCalendarInfoResult;
-import dev.muho.hotel.entity.RateCalendar;
-import dev.muho.hotel.entity.AdjustmentType;
-import dev.muho.hotel.error.RateCalendarNotFoundException;
-import dev.muho.hotel.repository.RateCalendarRepository;
+import dev.muho.hotellegacy.dto.command.RateCalendarCreateCommand;
+import dev.muho.hotellegacy.dto.command.RateCalendarInfoResult;
+import dev.muho.hotellegacy.entity.RateCalendar;
+import dev.muho.hotellegacy.entity.AdjustmentType;
+import dev.muho.hotellegacy.error.RateCalendarNotFoundException;
+import dev.muho.hotellegacy.repository.RateCalendarRepository;
+import dev.muho.hotellegacy.service.RateCalendarServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

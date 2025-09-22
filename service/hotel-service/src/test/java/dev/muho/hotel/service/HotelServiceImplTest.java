@@ -1,12 +1,13 @@
 package dev.muho.hotel.service;
 
-import dev.muho.hotel.dto.command.HotelCreateCommand;
-import dev.muho.hotel.dto.command.HotelInfoResult;
-import dev.muho.hotel.dto.command.HotelSearchCondition;
-import dev.muho.hotel.dto.command.HotelUpdateCommand;
-import dev.muho.hotel.entity.Hotel;
-import dev.muho.hotel.error.HotelNotFoundException;
-import dev.muho.hotel.repository.HotelRepository;
+import dev.muho.hotellegacy.dto.command.HotelCreateCommand;
+import dev.muho.hotellegacy.dto.command.HotelInfoResult;
+import dev.muho.hotellegacy.dto.command.HotelSearchCondition;
+import dev.muho.hotellegacy.dto.command.HotelUpdateCommand;
+import dev.muho.hotellegacy.entity.Hotel;
+import dev.muho.hotellegacy.error.HotelNotFoundException;
+import dev.muho.hotellegacy.repository.HotelRepository;
+import dev.muho.hotellegacy.service.HotelServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

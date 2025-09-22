@@ -1,10 +1,11 @@
 package dev.muho.hotel.service;
 
-import dev.muho.hotel.dto.command.RatePlanCreateCommand;
-import dev.muho.hotel.dto.command.RatePlanInfoResult;
-import dev.muho.hotel.entity.RatePlan;
-import dev.muho.hotel.error.RatePlanNotFoundException;
-import dev.muho.hotel.repository.RatePlanRepository;
+import dev.muho.hotellegacy.dto.command.RatePlanCreateCommand;
+import dev.muho.hotellegacy.dto.command.RatePlanInfoResult;
+import dev.muho.hotellegacy.entity.RatePlan;
+import dev.muho.hotellegacy.error.RatePlanNotFoundException;
+import dev.muho.hotellegacy.repository.RatePlanRepository;
+import dev.muho.hotellegacy.service.RatePlanServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,10 +1,11 @@
 package dev.muho.hotel.service;
 
-import dev.muho.hotel.dto.command.RoomInventoryBulkUpdateCommand;
-import dev.muho.hotel.dto.command.RoomInventoryUpdateCommand;
-import dev.muho.hotel.dto.command.RoomInventoryInfoResult;
-import dev.muho.hotel.entity.RoomInventory;
-import dev.muho.hotel.repository.RoomInventoryRepository;
+import dev.muho.hotellegacy.dto.command.RoomInventoryBulkUpdateCommand;
+import dev.muho.hotellegacy.dto.command.RoomInventoryUpdateCommand;
+import dev.muho.hotellegacy.dto.command.RoomInventoryInfoResult;
+import dev.muho.hotellegacy.entity.RoomInventory;
+import dev.muho.hotellegacy.repository.RoomInventoryRepository;
+import dev.muho.hotellegacy.service.RoomInventoryServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
