@@ -5,6 +5,7 @@ import dev.muho.hotel.domain.Hotel;
 import dev.muho.hotel.domain.PriceAdjustment;
 import dev.muho.hotel.domain.RatePlan;
 import dev.muho.hotel.domain.RoomType;
+import dev.muho.hotel.dto.request.AvailabilityRequest;
 import dev.muho.hotel.dto.response.AvailabilityResponse;
 import dev.muho.hotel.dto.response.AvailableRatePlanDto;
 import dev.muho.hotel.dto.response.AvailableRoomTypeDto;
@@ -72,30 +73,27 @@ public class AvailabilityService {
      * </ol>
      *
      * @param hotelId 조회할 호텔의 ID
-     * @param checkInDate 체크인 날짜
-     * @param checkOutDate 체크아웃 날짜
-     * @param adults 성인 투숙객 수
-     * @param children 아동 투숙객 수
+     * @param request 예약 가능성 조회 요청 객체
      * @return 예약 가능한 객실 타입과 요금제 정보가 포함된 응답 객체
      * @throws HotelNotFoundException 존재하지 않는 호텔 ID인 경우
      */
-    public AvailabilityResponse checkAvailability(Long hotelId, LocalDate checkInDate, LocalDate checkOutDate, int adults, int children) {
+    public AvailabilityResponse checkAvailability(Long hotelId, AvailabilityRequest request) {
         Hotel hotel = hotelRepository.findById(hotelId)
-                .orElseThrow(() -> new HotelNotFoundException());
+                .orElseThrow(HotelNotFoundException::new);
 
         List<RoomType> roomTypes = roomTypeRepository.findByHotel(hotel);
 
         List<AvailableRoomTypeDto> availableRoomTypeDtos = roomTypes.stream()
-                .filter(roomType -> roomType.getMaxCapacity() >= (adults + children))
-                .map(roomType -> toAvailableRoomTypeDto(roomType, checkInDate, checkOutDate))
+                .filter(roomType -> roomType.getMaxCapacity() >= (request.getAdults() + request.getChildren()))
+                .map(roomType -> toAvailableRoomTypeDto(roomType, request.getCheckInDate(), request.getCheckOutDate()))
                 .filter(dto -> dto != null && !dto.getAvailableRatePlans().isEmpty()) // 판매 가능한 요금제가 하나라도 있는 경우만 필터링
                 .collect(Collectors.toList());
 
         return AvailabilityResponse.builder()
                 .hotelId(hotel.getId())
                 .hotelName(hotel.getName())
-                .checkInDate(checkInDate)
-                .checkOutDate(checkOutDate)
+                .checkInDate(request.getCheckInDate())
+                .checkOutDate(request.getCheckOutDate())
                 .availableRoomTypes(availableRoomTypeDtos)
                 .build();
     }

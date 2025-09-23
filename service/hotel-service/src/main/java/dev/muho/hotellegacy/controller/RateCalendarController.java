@@ -1,6 +1,9 @@
 package dev.muho.hotellegacy.controller;
 
 import dev.muho.hotellegacy.dto.api.PromotionCreateRequest;
+import dev.muho.hotellegacy.dto.api.RateCalendarCreateRequest;
+import dev.muho.hotellegacy.dto.api.RateCalendarResponse;
+import dev.muho.hotellegacy.dto.api.RateCalendarUpdateRequest;
 import dev.muho.hotellegacy.dto.command.RateCalendarCreateCommand;
 import dev.muho.hotellegacy.dto.command.RateCalendarInfoResult;
 import dev.muho.hotellegacy.service.RateCalendarService;
@@ -20,18 +23,18 @@ public class RateCalendarController {
     private final RateCalendarService service;
 
     @GetMapping
-    public Page<PromotionCreateRequest.RateCalendarResponse> getRateCalendars(@PathVariable Long hotelId, Pageable pageable) {
-        return service.search(hotelId, pageable).map(PromotionCreateRequest.RateCalendarResponse::from);
+    public Page<RateCalendarResponse> getRateCalendars(@PathVariable Long hotelId, Pageable pageable) {
+        return service.search(hotelId, pageable).map(RateCalendarResponse::from);
     }
 
     @GetMapping("/{rateCalendarId}")
-    public ResponseEntity<PromotionCreateRequest.RateCalendarResponse> getRateCalendar(@PathVariable Long hotelId, @PathVariable Long rateCalendarId) {
+    public ResponseEntity<RateCalendarResponse> getRateCalendar(@PathVariable Long hotelId, @PathVariable Long rateCalendarId) {
         RateCalendarInfoResult r = service.findById(hotelId, rateCalendarId);
-        return ResponseEntity.ok(PromotionCreateRequest.RateCalendarResponse.from(r));
+        return ResponseEntity.ok(RateCalendarResponse.from(r));
     }
 
     @PostMapping
-    public ResponseEntity<PromotionCreateRequest.RateCalendarResponse> createRateCalendar(@PathVariable Long hotelId, @Valid @RequestBody PromotionCreateRequest.RateCalendarCreateRequest rateCalendarCreateRequest) {
+    public ResponseEntity<RateCalendarResponse> createRateCalendar(@PathVariable Long hotelId, @Valid @RequestBody RateCalendarCreateRequest rateCalendarCreateRequest) {
         RateCalendarCreateCommand cmd = new RateCalendarCreateCommand(
                 rateCalendarCreateRequest.getName(),
                 rateCalendarCreateRequest.getDescription(),
@@ -42,11 +45,11 @@ public class RateCalendarController {
                 rateCalendarCreateRequest.getAdjustmentValue()
         );
         RateCalendarInfoResult created = service.create(hotelId, cmd);
-        return ResponseEntity.status(HttpStatus.CREATED).body(PromotionCreateRequest.RateCalendarResponse.from(created));
+        return ResponseEntity.status(HttpStatus.CREATED).body(RateCalendarResponse.from(created));
     }
 
     @PutMapping("/{rateCalendarId}")
-    public ResponseEntity<PromotionCreateRequest.RateCalendarResponse> updateRateCalendar(@PathVariable Long hotelId, @PathVariable Long rateCalendarId, @Valid @RequestBody PromotionCreateRequest.RateCalendarUpdateRequest rateCalendarUpdateRequest) {
+    public ResponseEntity<RateCalendarResponse> updateRateCalendar(@PathVariable Long hotelId, @PathVariable Long rateCalendarId, @Valid @RequestBody RateCalendarUpdateRequest rateCalendarUpdateRequest) {
         RateCalendarCreateCommand cmd = new RateCalendarCreateCommand(
                 rateCalendarUpdateRequest.getName(),
                 rateCalendarUpdateRequest.getDescription(),
@@ -57,7 +60,7 @@ public class RateCalendarController {
                 rateCalendarUpdateRequest.getAdjustmentValue()
         );
         RateCalendarInfoResult updated = service.update(hotelId, rateCalendarId, cmd);
-        return ResponseEntity.ok(PromotionCreateRequest.RateCalendarResponse.from(updated));
+        return ResponseEntity.ok(RateCalendarResponse.from(updated));
     }
 
     @DeleteMapping("/{rateCalendarId}")

@@ -1,9 +1,11 @@
 package dev.muho.hotel.service;
 
 import dev.muho.hotel.domain.*;
+import dev.muho.hotel.dto.request.AvailabilityRequest;
 import dev.muho.hotel.dto.response.AvailabilityResponse;
 import dev.muho.hotel.global.exception.HotelNotFoundException;
 import dev.muho.hotel.repository.*;
+import dev.muho.hotel.util.TestDateUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,16 +34,12 @@ public class AvailabilityServiceTest {
     // --- 의존하는 Repository들을 모두 @Mock으로 선언 ---
     @Mock
     private HotelRepository hotelRepository;
-
     @Mock
     private RoomTypeRepository roomTypeRepository;
-
     @Mock
     private RoomInventoryRepository roomInventoryRepository;
-
     @Mock
     private BaseRateRepository baseRateRepository;
-
     @Mock
     private PriceAdjustmentRepository priceAdjustmentRepository;
 
@@ -49,8 +47,8 @@ public class AvailabilityServiceTest {
     @DisplayName("예약 가능 조회 성공: 조건에 맞는 객실 1개를 반환한다")
     void checkAvailability_Success_ReturnsAvailableRoom() {
         // given (테스트 데이터 및 Mock 객체 동작 정의)
-        LocalDate checkIn = LocalDate.of(2025, 10, 26);
-        LocalDate checkOut = LocalDate.of(2025, 10, 28);
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(32);
         List<LocalDate> dates = List.of(checkIn, checkIn.plusDays(1));
 
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
@@ -86,7 +84,8 @@ public class AvailabilityServiceTest {
         when(priceAdjustmentRepository.findActiveAdjustmentsForPlanInDateRange(any(), any(), any())).thenReturn(Collections.emptyList());
 
         // when (실제 테스트할 메서드 호출)
-        AvailabilityResponse response = availabilityService.checkAvailability(1L, checkIn, checkOut, 2, 0);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then (결과 검증)
         assertThat(response.getAvailableRoomTypes()).hasSize(1);
@@ -99,8 +98,8 @@ public class AvailabilityServiceTest {
     @DisplayName("예약 가능 조회 실패: 기간 중 하루 재고가 없어 빈 리스트를 반환한다")
     void checkAvailability_Fail_WhenNoInventory() {
         // given
-        LocalDate checkIn = LocalDate.of(2025, 10, 26);
-        LocalDate checkOut = LocalDate.of(2025, 10, 28);
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(32);
         List<LocalDate> dates = List.of(checkIn, checkIn.plusDays(1));
 
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
@@ -128,7 +127,8 @@ public class AvailabilityServiceTest {
         when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(inventories);
 
         // when
-        AvailabilityResponse response = availabilityService.checkAvailability(1L, checkIn, checkOut, 2, 0);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -141,8 +141,10 @@ public class AvailabilityServiceTest {
         when(hotelRepository.findById(999L)).thenReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> availabilityService.checkAvailability(999L,
-                LocalDate.of(2025, 10, 26), LocalDate.of(2025, 10, 28), 2, 0))
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(32);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
+        assertThatThrownBy(() -> availabilityService.checkAvailability(999L, request))
                 .isInstanceOf(HotelNotFoundException.class)
                 .hasMessage("존재하지 않는 호텔입니다.");
     }
@@ -151,8 +153,8 @@ public class AvailabilityServiceTest {
     @DisplayName("객실 수용 인원 초과 시 빈 리스트를 반환한다")
     void checkAvailability_ReturnsEmpty_WhenExceedsRoomCapacity() {
         // given
-        LocalDate checkIn = LocalDate.of(2025, 10, 26);
-        LocalDate checkOut = LocalDate.of(2025, 10, 28);
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(32);
 
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
         ReflectionTestUtils.setField(hotel, "id", 1L);
@@ -165,7 +167,8 @@ public class AvailabilityServiceTest {
         when(roomTypeRepository.findByHotel(hotel)).thenReturn(List.of(roomType));
 
         // when (성인 2명 + 아동 2명 = 총 4명, 객실 수용 인원 2명 초과)
-        AvailabilityResponse response = availabilityService.checkAvailability(1L, checkIn, checkOut, 2, 2);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 2);
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -175,8 +178,8 @@ public class AvailabilityServiceTest {
     @DisplayName("요금제가 판매 중단된 경우 빈 리스트를 반환한다")
     void checkAvailability_ReturnsEmpty_WhenRatePlanNotOnSale() {
         // given
-        LocalDate checkIn = LocalDate.of(2025, 10, 26);
-        LocalDate checkOut = LocalDate.of(2025, 10, 28);
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(32);
         List<LocalDate> dates = List.of(checkIn, checkIn.plusDays(1));
 
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
@@ -201,7 +204,8 @@ public class AvailabilityServiceTest {
         when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(List.of(inventory1, inventory2));
 
         // when
-        AvailabilityResponse response = availabilityService.checkAvailability(1L, checkIn, checkOut, 2, 0);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -211,8 +215,8 @@ public class AvailabilityServiceTest {
     @DisplayName("최소 숙박일 조건 미달 시 빈 리스트를 반환한다")
     void checkAvailability_ReturnsEmpty_WhenBelowMinNights() {
         // given
-        LocalDate checkIn = LocalDate.of(2025, 10, 26);
-        LocalDate checkOut = LocalDate.of(2025, 10, 27); // 1박 (최소 3박 필요한 요금제)
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(31); // 1박 (최소 3박 필요한 요금제)
         List<LocalDate> dates = List.of(checkIn);
 
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
@@ -235,7 +239,8 @@ public class AvailabilityServiceTest {
         when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(List.of(inventory));
 
         // when
-        AvailabilityResponse response = availabilityService.checkAvailability(1L, checkIn, checkOut, 2, 0);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -245,8 +250,8 @@ public class AvailabilityServiceTest {
     @DisplayName("최대 숙박일 조건 초과 시 빈 리스트를 반환한다")
     void checkAvailability_ReturnsEmpty_WhenExceedsMaxNights() {
         // given
-        LocalDate checkIn = LocalDate.of(2025, 10, 26);
-        LocalDate checkOut = LocalDate.of(2025, 11, 2); // 7박 (최대 5박까지 허용하는 요금제)
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(37); // 7박 (최대 5박까지 허용하는 요금제)
         List<LocalDate> dates = checkIn.datesUntil(checkOut).toList();
 
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
@@ -274,7 +279,8 @@ public class AvailabilityServiceTest {
         when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(inventories);
 
         // when
-        AvailabilityResponse response = availabilityService.checkAvailability(1L, checkIn, checkOut, 2, 0);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -284,8 +290,8 @@ public class AvailabilityServiceTest {
     @DisplayName("할인 적용 시 정확한 총 요금을 계산한다")
     void checkAvailability_CalculatesCorrectPriceWithDiscount() {
         // given
-        LocalDate checkIn = LocalDate.of(2025, 10, 26);
-        LocalDate checkOut = LocalDate.of(2025, 10, 28);
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(32);
         List<LocalDate> dates = List.of(checkIn, checkIn.plusDays(1));
 
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
@@ -327,7 +333,8 @@ public class AvailabilityServiceTest {
         when(priceAdjustmentRepository.findActiveAdjustmentsForPlanInDateRange(any(), any(), any())).thenReturn(List.of(discount));
 
         // when
-        AvailabilityResponse response = availabilityService.checkAvailability(1L, checkIn, checkOut, 2, 0);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).hasSize(1);
@@ -342,8 +349,8 @@ public class AvailabilityServiceTest {
     @DisplayName("할증 적용 시 정확한 총 요금을 계산한다")
     void checkAvailability_CalculatesCorrectPriceWithSurcharge() {
         // given
-        LocalDate checkIn = LocalDate.of(2025, 10, 26);
-        LocalDate checkOut = LocalDate.of(2025, 10, 28);
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(32);
         List<LocalDate> dates = List.of(checkIn, checkIn.plusDays(1));
 
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
@@ -385,7 +392,8 @@ public class AvailabilityServiceTest {
         when(priceAdjustmentRepository.findActiveAdjustmentsForPlanInDateRange(any(), any(), any())).thenReturn(List.of(surcharge));
 
         // when
-        AvailabilityResponse response = availabilityService.checkAvailability(1L, checkIn, checkOut, 2, 0);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).hasSize(1);
@@ -400,8 +408,8 @@ public class AvailabilityServiceTest {
     @DisplayName("여러 객실 타입이 있을 때 조건에 맞는 것들만 반환한다")
     void checkAvailability_ReturnsMultipleRoomTypes_WhenAvailable() {
         // given
-        LocalDate checkIn = LocalDate.of(2025, 10, 26);
-        LocalDate checkOut = LocalDate.of(2025, 10, 28);
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(32);
         List<LocalDate> dates = List.of(checkIn, checkIn.plusDays(1));
 
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
@@ -453,7 +461,8 @@ public class AvailabilityServiceTest {
         when(priceAdjustmentRepository.findActiveAdjustmentsForPlanInDateRange(any(), any(), any())).thenReturn(Collections.emptyList());
 
         // when
-        AvailabilityResponse response = availabilityService.checkAvailability(1L, checkIn, checkOut, 2, 0);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).hasSize(2);
@@ -475,20 +484,20 @@ public class AvailabilityServiceTest {
     @DisplayName("예약 기간 조건에 맞지 않는 요금제는 제외된다")
     void checkAvailability_ExcludesRatePlan_WhenOutsideBookingWindow() {
         // given
-        LocalDate checkIn = LocalDate.of(2025, 10, 26);
-        LocalDate checkOut = LocalDate.of(2025, 10, 28);
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(32);
         List<LocalDate> dates = List.of(checkIn, checkIn.plusDays(1));
 
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
         ReflectionTestUtils.setField(hotel, "id", 1L);
 
-        // 예약 기간이 지난 요금제 (예약 마감일이 어제)
+        // 예약 기간이 지난 요금제 (예약 마감일이 과거)
         RatePlan ratePlan = RatePlan.builder()
                 .name("마감된 플랜")
                 .onSale(true)
                 .minNights(1)
-                .bookingStartDate(LocalDate.of(2025, 9, 1))
-                .bookingEndDate(LocalDate.of(2025, 9, 21)) // 어제 마감
+                .bookingStartDate(TestDateUtils.getFutureLocalDatePlusDays(-60))
+                .bookingEndDate(TestDateUtils.getFutureLocalDatePlusDays(-30)) // 예약 마감일이 과거
                 .build();
         ReflectionTestUtils.setField(ratePlan, "id", 1L);
 
@@ -507,7 +516,8 @@ public class AvailabilityServiceTest {
         when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(List.of(inventory1, inventory2));
 
         // when
-        AvailabilityResponse response = availabilityService.checkAvailability(1L, checkIn, checkOut, 2, 0);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -517,20 +527,20 @@ public class AvailabilityServiceTest {
     @DisplayName("숙박 기간 조건에 맞지 않는 요금제는 제외된다")
     void checkAvailability_ExcludesRatePlan_WhenOutsideStayWindow() {
         // given
-        LocalDate checkIn = LocalDate.of(2025, 10, 26);
-        LocalDate checkOut = LocalDate.of(2025, 10, 28);
+        LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
+        LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(32);
         List<LocalDate> dates = List.of(checkIn, checkIn.plusDays(1));
 
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
         ReflectionTestUtils.setField(hotel, "id", 1L);
 
-        // 숙박 가능 기간이 지난 요금제 (체크인 허용 마감일이 어제)
+        // 숙박 가능 기간이 지난 요금제 (체크인 허용 마감일이 과거)
         RatePlan ratePlan = RatePlan.builder()
                 .name("기간 만료 플랜")
                 .onSale(true)
                 .minNights(1)
-                .checkInStartDate(LocalDate.of(2025, 9, 1))
-                .checkInEndDate(LocalDate.of(2025, 9, 21)) // 어제까지만 체크인 허용
+                .checkInStartDate(TestDateUtils.getFutureLocalDatePlusDays(-60))
+                .checkInEndDate(TestDateUtils.getFutureLocalDatePlusDays(-30)) // 체크인 허용 마감일이 과거
                 .build();
         ReflectionTestUtils.setField(ratePlan, "id", 1L);
 
@@ -549,7 +559,8 @@ public class AvailabilityServiceTest {
         when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(List.of(inventory1, inventory2));
 
         // when
-        AvailabilityResponse response = availabilityService.checkAvailability(1L, checkIn, checkOut, 2, 0);
+        AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();

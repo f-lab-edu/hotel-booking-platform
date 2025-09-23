@@ -1,6 +1,9 @@
 package dev.muho.hotellegacy.controller;
 
 import dev.muho.hotellegacy.dto.api.PromotionCreateRequest;
+import dev.muho.hotellegacy.dto.api.RoomInventoryBulkUpdateRequest;
+import dev.muho.hotellegacy.dto.api.RoomInventoryResponse;
+import dev.muho.hotellegacy.dto.api.RoomInventoryUpdateRequest;
 import dev.muho.hotellegacy.dto.command.RoomInventoryBulkUpdateCommand;
 import dev.muho.hotellegacy.dto.command.RoomInventoryUpdateCommand;
 import dev.muho.hotellegacy.service.RoomInventoryService;
@@ -21,13 +24,13 @@ public class RoomInventoryController {
     private final RoomInventoryService service;
 
     @GetMapping
-    public Page<PromotionCreateRequest.RoomInventoryResponse> getInventories(@PathVariable Long roomTypeId, Pageable pageable) {
-        return service.search(roomTypeId, pageable).map(PromotionCreateRequest.RoomInventoryResponse::from);
+    public Page<RoomInventoryResponse> getInventories(@PathVariable Long roomTypeId, Pageable pageable) {
+        return service.search(roomTypeId, pageable).map(RoomInventoryResponse::from);
     }
 
     @PutMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void bulkUpdateInventory(@PathVariable Long roomTypeId, @Valid @RequestBody PromotionCreateRequest.RoomInventoryBulkUpdateRequest roomInventoryBulkUpdateRequest) {
+    public void bulkUpdateInventory(@PathVariable Long roomTypeId, @Valid @RequestBody RoomInventoryBulkUpdateRequest roomInventoryBulkUpdateRequest) {
         RoomInventoryBulkUpdateCommand cmd = new RoomInventoryBulkUpdateCommand(
                 roomInventoryBulkUpdateRequest.getStartDate(),
                 roomInventoryBulkUpdateRequest.getEndDate(),
@@ -39,7 +42,7 @@ public class RoomInventoryController {
 
     @PutMapping("/{date}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateInventory(@PathVariable Long roomTypeId, @PathVariable LocalDate date, @Valid @RequestBody PromotionCreateRequest.RoomInventoryUpdateRequest roomInventoryUpdateRequest) {
+    public void updateInventory(@PathVariable Long roomTypeId, @PathVariable LocalDate date, @Valid @RequestBody RoomInventoryUpdateRequest roomInventoryUpdateRequest) {
         RoomInventoryUpdateCommand cmd = new RoomInventoryUpdateCommand(
                 roomInventoryUpdateRequest.getTotalRooms(),
                 roomInventoryUpdateRequest.getAvailableRooms()

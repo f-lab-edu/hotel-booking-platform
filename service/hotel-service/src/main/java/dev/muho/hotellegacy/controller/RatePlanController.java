@@ -1,6 +1,9 @@
 package dev.muho.hotellegacy.controller;
 
 import dev.muho.hotellegacy.dto.api.PromotionCreateRequest;
+import dev.muho.hotellegacy.dto.api.RatePlanCreateRequest;
+import dev.muho.hotellegacy.dto.api.RatePlanResponse;
+import dev.muho.hotellegacy.dto.api.RatePlanUpdateRequest;
 import dev.muho.hotellegacy.dto.command.RatePlanCreateCommand;
 import dev.muho.hotellegacy.dto.command.RatePlanInfoResult;
 import dev.muho.hotellegacy.service.RatePlanService;
@@ -20,18 +23,18 @@ public class RatePlanController {
     private final RatePlanService service;
 
     @GetMapping
-    public Page<PromotionCreateRequest.RatePlanResponse> getRatePlans(@PathVariable Long roomTypeId, Pageable pageable) {
-        return service.search(roomTypeId, pageable).map(PromotionCreateRequest.RatePlanResponse::from);
+    public Page<RatePlanResponse> getRatePlans(@PathVariable Long roomTypeId, Pageable pageable) {
+        return service.search(roomTypeId, pageable).map(RatePlanResponse::from);
     }
 
     @GetMapping("/{ratePlanId}")
-    public ResponseEntity<PromotionCreateRequest.RatePlanResponse> getRatePlan(@PathVariable Long roomTypeId, @PathVariable Long ratePlanId) {
+    public ResponseEntity<RatePlanResponse> getRatePlan(@PathVariable Long roomTypeId, @PathVariable Long ratePlanId) {
         RatePlanInfoResult r = service.findById(roomTypeId, ratePlanId);
-        return ResponseEntity.ok(PromotionCreateRequest.RatePlanResponse.from(r));
+        return ResponseEntity.ok(RatePlanResponse.from(r));
     }
 
     @PostMapping
-    public ResponseEntity<PromotionCreateRequest.RatePlanResponse> createRatePlan(@PathVariable Long roomTypeId, @Valid @RequestBody PromotionCreateRequest.RatePlanCreateRequest ratePlanCreateRequest) {
+    public ResponseEntity<RatePlanResponse> createRatePlan(@PathVariable Long roomTypeId, @Valid @RequestBody RatePlanCreateRequest ratePlanCreateRequest) {
         RatePlanCreateCommand cmd = new RatePlanCreateCommand(
                 ratePlanCreateRequest.getName(),
                 ratePlanCreateRequest.getDescription(),
@@ -42,11 +45,11 @@ public class RatePlanController {
                 ratePlanCreateRequest.getMaxNights()
         );
         RatePlanInfoResult created = service.create(roomTypeId, cmd);
-        return ResponseEntity.status(HttpStatus.CREATED).body(PromotionCreateRequest.RatePlanResponse.from(created));
+        return ResponseEntity.status(HttpStatus.CREATED).body(RatePlanResponse.from(created));
     }
 
     @PutMapping("/{ratePlanId}")
-    public ResponseEntity<PromotionCreateRequest.RatePlanResponse> updateRatePlan(@PathVariable Long roomTypeId, @PathVariable Long ratePlanId, @Valid @RequestBody PromotionCreateRequest.RatePlanUpdateRequest ratePlanUpdateRequest) {
+    public ResponseEntity<RatePlanResponse> updateRatePlan(@PathVariable Long roomTypeId, @PathVariable Long ratePlanId, @Valid @RequestBody RatePlanUpdateRequest ratePlanUpdateRequest) {
         RatePlanCreateCommand cmd = new RatePlanCreateCommand(
                 ratePlanUpdateRequest.getName(),
                 ratePlanUpdateRequest.getDescription(),
@@ -57,7 +60,7 @@ public class RatePlanController {
                 ratePlanUpdateRequest.getMaxNights()
         );
         RatePlanInfoResult updated = service.update(roomTypeId, ratePlanId, cmd);
-        return ResponseEntity.ok(PromotionCreateRequest.RatePlanResponse.from(updated));
+        return ResponseEntity.ok(RatePlanResponse.from(updated));
     }
 
     @DeleteMapping("/{ratePlanId}")

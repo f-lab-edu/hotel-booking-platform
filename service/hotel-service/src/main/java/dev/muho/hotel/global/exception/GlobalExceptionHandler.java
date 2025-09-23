@@ -1,12 +1,15 @@
 package dev.muho.hotel.global.exception;
 
+import dev.muho.hotellegacy.common.RequestValidationErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,6 +43,29 @@ public class GlobalExceptionHandler {
         });
         ErrorResponse response = new ErrorResponse(ErrorCode.INVALID_INPUT_VALUE, errors);
         return ResponseEntity.badRequest().body(response);
+    }
+
+    /**
+     * @RequestParam으로 인해 발생하는 MissingServletRequestParameterException 예외를 처리합니다.
+     * 주로 필수 요청 파라미터가 누락되었을 때 발생합니다.
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParams(MissingServletRequestParameterException ex) {
+        log.error("handleMissingParams: {}", ex.getMessage());
+        Map<String, String> errors = new HashMap<>();
+        errors.put(ex.getParameterName(), ex.getParameterName() + " 파라미터는 필수입니다.");
+        ErrorResponse response = new ErrorResponse(ErrorCode.INVALID_INPUT_VALUE, errors);
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    /**
+     * @PathVariable, @RequestParam 등에서 타입 변환 실패 시 발생하는 예외를 처리합니다.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    protected ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+        log.error("handleMethodArgumentTypeMismatchException: {}", e.getMessage());
+        final ErrorResponse response = new ErrorResponse(ErrorCode.TYPE_MISMATCH);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     /**
