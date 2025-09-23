@@ -3,6 +3,8 @@ package dev.muho.hotel.domain;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -19,7 +21,7 @@ import java.util.List;
 @Entity
 @Table(name = "hotels")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA는 기본 생성자를 필요로 합니다.
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Hotel extends BaseTimeEntity {
 
     @Id
@@ -35,6 +37,10 @@ public class Hotel extends BaseTimeEntity {
     @Column(nullable = false)
     private int rating; // 성급
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private HotelStatus status = HotelStatus.OPERATING; // 기본값: 운영 중
+
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoomType> roomTypes = new ArrayList<>();
 
@@ -43,5 +49,18 @@ public class Hotel extends BaseTimeEntity {
         this.name = name;
         this.address = address;
         this.rating = rating;
+        this.status = HotelStatus.OPERATING;
+    }
+
+    /** 호텔 정보 업데이트 메서드 */
+    public void updateHotelInfo(String name, String address, int rating) {
+        this.name = name;
+        this.address = address;
+        this.rating = rating;
+    }
+
+    /** 호텔 상태 변경 메서드 (논리적 삭제 포함) */
+    public void changeStatus(HotelStatus status) {
+        this.status = status;
     }
 }

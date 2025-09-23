@@ -10,6 +10,13 @@ public class ErrorResponse {
     private final String message;
     private final Map<String, String> errors; // validation 에러용
 
+    // 기본 생성자 (Jackson 역직렬화용)
+    public ErrorResponse() {
+        this.status = 0;
+        this.message = null;
+        this.errors = null;
+    }
+
     public ErrorResponse(ErrorCode errorCode) {
         this.status = errorCode.getStatus().value();
         this.message = errorCode.getMessage();

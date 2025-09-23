@@ -34,7 +34,7 @@ public class TestDataSetupService {
     }
 
     @Transactional
-    public Hotel setup() {
+    public Hotel setupHotel() {
         Hotel hotel = hotelRepository.save(Hotel.builder().name("테스트 호텔").address("서울").rating(5).build());
         RoomType roomType = roomTypeRepository.save(RoomType.builder().hotel(hotel).name("스탠다드 더블").maxCapacity(4).standardCapacity(2).build());
         RatePlan ratePlan = ratePlanRepository.save(RatePlan.builder().roomType(roomType).name("기본 플랜").onSale(true).minNights(1).build());
@@ -56,5 +56,13 @@ public class TestDataSetupService {
         ));
 
         return hotel;
+    }
+
+    @Transactional
+    public List<Hotel> setupHotels() {
+        Hotel hotel1 = hotelRepository.save(Hotel.builder().name("테스트 호텔1").address("서울").rating(5).build());
+        Hotel hotel2 = hotelRepository.save(Hotel.builder().name("테스트 호텔2").address("부산").rating(4).build());
+        Hotel hotel3 = hotelRepository.save(Hotel.builder().name("테스트 호텔3").address("제주").rating(3).build());
+        return List.of(hotel1, hotel2, hotel3);
     }
 }

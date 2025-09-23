@@ -47,7 +47,7 @@ public class AvailabilityControllerTest {
     @BeforeEach
     void setUp() {
         databaseCleaner.execute();
-        defaultHotel = testDataSetupService.setup();
+        defaultHotel = testDataSetupService.setupHotel();
     }
 
     private String buildAvailabilityUrl(Long hotelId, String checkIn, String checkOut, int adults, int children) {
