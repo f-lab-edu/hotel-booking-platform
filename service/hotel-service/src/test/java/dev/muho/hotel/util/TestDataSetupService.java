@@ -83,6 +83,44 @@ public class TestDataSetupService {
     }
 
     @Transactional
+    public RoomInventory setupRoomInventory(RoomType roomType) {
+        // 현재 날짜 기준으로 테스트 재고 생성
+        LocalDate testDate = LocalDate.now().plusDays(1); // 내일 날짜로 설정
+
+        RoomInventory roomInventory = RoomInventory.builder()
+                .roomType(roomType)
+                .date(testDate)
+                .totalQuantity(15) // 총 재고 15개
+                .build();
+
+        // 예약된 수량을 5개로 설정
+        ReflectionTestUtils.setField(roomInventory, "reservedQuantity", 5);
+
+        return roomInventoryRepository.save(roomInventory);
+    }
+
+    @Transactional
+    public RoomType setupSecondRoomType() {
+        // 기존 호텔을 찾거나 새로 생성
+        Hotel hotel = hotelRepository.findAll().stream()
+                .findFirst()
+                .orElseGet(() -> hotelRepository.save(
+                        Hotel.builder()
+                                .name("테스트 호텔")
+                                .address("서울")
+                                .rating(5)
+                                .build()));
+
+        return roomTypeRepository.save(
+                RoomType.builder()
+                        .hotel(hotel)
+                        .name("디럭스 트윈")
+                        .standardCapacity(2)
+                        .maxCapacity(3)
+                        .build());
+    }
+
+    @Transactional
     public List<Hotel> setupHotels() {
         Hotel hotel1 = hotelRepository.save(Hotel.builder().name("테스트 호텔1").address("서울").rating(5).build());
         Hotel hotel2 = hotelRepository.save(Hotel.builder().name("테스트 호텔2").address("부산").rating(4).build());

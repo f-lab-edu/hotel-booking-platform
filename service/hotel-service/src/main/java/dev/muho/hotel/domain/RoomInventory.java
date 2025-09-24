@@ -1,5 +1,6 @@
 package dev.muho.hotel.domain;
 
+import dev.muho.hotel.global.exception.RoomInventoryDecreaseTotalQuantityException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -11,6 +12,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -58,7 +60,6 @@ public class RoomInventory extends BaseTimeEntity {
         this.reservedQuantity = 0; // 초기 예약 수량은 0
     }
 
-    //== 비즈니스 로직 ==//
     /**
      * 재고를 감소시킵니다. (예약 시 사용)
      * @param quantity 감소시킬 수량
@@ -77,5 +78,17 @@ public class RoomInventory extends BaseTimeEntity {
      */
     public void increaseStock(int quantity) {
         this.reservedQuantity -= quantity;
+    }
+
+    /**
+     * 총 재고 수량을 업데이트합니다.
+     * @param totalQuantity 새로운 총 재고 수량
+     * @throws RoomInventoryDecreaseTotalQuantityException 예약된 수량보다 총 재고 수량이 적을 경우 예외 발생
+     */
+    public void updateTotalQuantity(int totalQuantity) {
+        if (totalQuantity < this.reservedQuantity) {
+            throw new RoomInventoryDecreaseTotalQuantityException(this.reservedQuantity);
+        }
+        this.totalQuantity = totalQuantity;
     }
 }
