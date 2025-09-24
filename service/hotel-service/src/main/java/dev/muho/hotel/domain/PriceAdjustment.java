@@ -47,12 +47,14 @@ public class PriceAdjustment extends BaseTimeEntity {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount; // 조정 값 (예: 20000, 10.5)
 
-    // --- 적용 조건 ---
     @Column(nullable = false)
     private LocalDate startDate; // 이 정책이 적용되는 기간 (시작)
 
     @Column(nullable = false)
     private LocalDate endDate; // 이 정책이 적용되는 기간 (종료)
+
+    @Column(nullable = false)
+    private Status status = Status.ACTIVE;
 
     // 얼리버드/라스트미닛 조건을 위한 필드
     // 예: 30 -> 체크인 30일 이전 예약 시 적용
@@ -77,11 +79,21 @@ public class PriceAdjustment extends BaseTimeEntity {
         this.bookingDaysBeforeArrival = bookingDaysBeforeArrival;
     }
 
-    public enum AdjustmentType {
-        DISCOUNT, SURCHARGE
-    }
-
-    public enum CalculationType {
-        FIXED_AMOUNT, PERCENTAGE
+    public void update(String name,
+                       AdjustmentType adjustmentType,
+                       CalculationType calculationType,
+                       BigDecimal amount,
+                       LocalDate startDate,
+                       LocalDate endDate,
+                       Status status,
+                       Integer bookingDaysBeforeArrival) {
+        this.name = name;
+        this.adjustmentType = adjustmentType;
+        this.calculationType = calculationType;
+        this.amount = amount;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.status = status;
+        this.bookingDaysBeforeArrival = bookingDaysBeforeArrival;
     }
 }

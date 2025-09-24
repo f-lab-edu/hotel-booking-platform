@@ -18,19 +18,22 @@ public class TestDataSetupService {
     private final RatePlanRepository ratePlanRepository;
     private final RoomInventoryRepository roomInventoryRepository;
     private final BaseRateRepository baseRateRepository;
+    private final PriceAdjustmentRepository priceAdjustmentRepository;
 
     public TestDataSetupService(
         HotelRepository hotelRepository,
         RoomTypeRepository roomTypeRepository,
         RatePlanRepository ratePlanRepository,
         RoomInventoryRepository roomInventoryRepository,
-        BaseRateRepository baseRateRepository
+        BaseRateRepository baseRateRepository,
+        PriceAdjustmentRepository priceAdjustmentRepository
     ) {
         this.hotelRepository = hotelRepository;
         this.roomTypeRepository = roomTypeRepository;
         this.ratePlanRepository = ratePlanRepository;
         this.roomInventoryRepository = roomInventoryRepository;
         this.baseRateRepository = baseRateRepository;
+        this.priceAdjustmentRepository = priceAdjustmentRepository;
     }
 
     @Transactional
@@ -126,5 +129,21 @@ public class TestDataSetupService {
         Hotel hotel2 = hotelRepository.save(Hotel.builder().name("테스트 호텔2").address("부산").rating(4).build());
         Hotel hotel3 = hotelRepository.save(Hotel.builder().name("테스트 호텔3").address("제주").rating(3).build());
         return List.of(hotel1, hotel2, hotel3);
+    }
+
+    @Transactional
+    public PriceAdjustment setupPriceAdjustment(RatePlan ratePlan) {
+        return priceAdjustmentRepository.save(
+            PriceAdjustment.builder()
+                .ratePlan(ratePlan)
+                .name("성수기 할증")
+                .adjustmentType(AdjustmentType.SURCHARGE)
+                .calculationType(CalculationType.PERCENTAGE)
+                .amount(BigDecimal.valueOf(20.0))
+                .startDate(LocalDate.of(2024, 7, 1))
+                .endDate(LocalDate.of(2024, 8, 31))
+                .bookingDaysBeforeArrival(null)
+                .build()
+        );
     }
 }

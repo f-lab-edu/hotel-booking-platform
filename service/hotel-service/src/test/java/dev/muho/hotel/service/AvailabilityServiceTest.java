@@ -323,8 +323,8 @@ public class AvailabilityServiceTest {
                 .startDate(checkIn)
                 .endDate(checkOut)
                 .amount(new BigDecimal("10"))
-                .calculationType(PriceAdjustment.CalculationType.PERCENTAGE)
-                .adjustmentType(PriceAdjustment.AdjustmentType.DISCOUNT)
+                .calculationType(CalculationType.PERCENTAGE)
+                .adjustmentType(AdjustmentType.DISCOUNT)
                 .build();
 
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
@@ -382,8 +382,8 @@ public class AvailabilityServiceTest {
                 .startDate(checkIn)
                 .endDate(checkOut)
                 .amount(new BigDecimal("20000"))
-                .calculationType(PriceAdjustment.CalculationType.FIXED_AMOUNT)
-                .adjustmentType(PriceAdjustment.AdjustmentType.SURCHARGE)
+                .calculationType(CalculationType.FIXED_AMOUNT)
+                .adjustmentType(AdjustmentType.SURCHARGE)
                 .build();
 
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));

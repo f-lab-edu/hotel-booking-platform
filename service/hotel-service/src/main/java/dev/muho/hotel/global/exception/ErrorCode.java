@@ -20,6 +20,9 @@ public enum ErrorCode {
     // --- Room Inventory ---
     CANNOT_DECREASE_TOTAL_QUANTITY(HttpStatus.BAD_REQUEST, "총 재고 수량을 현재 예약된 수량({0})보다 적게 설정할 수 없습니다."),
 
+    // --- Price Adjustment ---
+    PRICE_ADJUSTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 가격 조정입니다."),
+
     // --- Rate ---
     BASE_RATE_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "해당 날짜({0})의 기본 요금 설정을 찾을 수 없습니다."),
 

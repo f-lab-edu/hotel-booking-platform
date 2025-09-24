@@ -1,6 +1,8 @@
 package dev.muho.hotel.service;
 
+import dev.muho.hotel.domain.AdjustmentType;
 import dev.muho.hotel.domain.BaseRate;
+import dev.muho.hotel.domain.CalculationType;
 import dev.muho.hotel.domain.Hotel;
 import dev.muho.hotel.domain.PriceAdjustment;
 import dev.muho.hotel.domain.RatePlan;
@@ -322,14 +324,14 @@ public class AvailabilityService {
 
             if (isApplicable) {
                 BigDecimal adjustmentAmount;
-                if (adj.getCalculationType() == PriceAdjustment.CalculationType.PERCENTAGE) {
+                if (adj.getCalculationType() == CalculationType.PERCENTAGE) {
                     // 퍼센트 할인은 기준가(dailyBasePrice)를 기준으로 계산합니다.
                     adjustmentAmount = dailyBasePrice.multiply(adj.getAmount().divide(new BigDecimal("100")));
                 } else { // FIXED_AMOUNT
                     adjustmentAmount = adj.getAmount();
                 }
 
-                if (adj.getAdjustmentType() == PriceAdjustment.AdjustmentType.DISCOUNT) {
+                if (adj.getAdjustmentType() == AdjustmentType.DISCOUNT) {
                     finalPrice = finalPrice.subtract(adjustmentAmount);
                 } else { // SURCHARGE
                     finalPrice = finalPrice.add(adjustmentAmount);
