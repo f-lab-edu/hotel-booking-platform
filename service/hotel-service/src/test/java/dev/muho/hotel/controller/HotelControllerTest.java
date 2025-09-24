@@ -1,7 +1,7 @@
 package dev.muho.hotel.controller;
 
 import dev.muho.hotel.domain.Hotel;
-import dev.muho.hotel.domain.HotelStatus;
+import dev.muho.hotel.domain.Status;
 import dev.muho.hotel.dto.request.HotelCreateRequest;
 import dev.muho.hotel.dto.request.HotelStatusUpdateRequest;
 import dev.muho.hotel.dto.request.HotelUpdateRequest;
@@ -81,7 +81,7 @@ public class HotelControllerTest {
             assertThat(response.getBody().getHotelName()).isEqualTo(hotel.getName());
             assertThat(response.getBody().getAddress()).isEqualTo(hotel.getAddress());
             assertThat(response.getBody().getRating()).isEqualTo(hotel.getRating());
-            assertThat(response.getBody().getStatus()).isEqualTo(HotelStatus.OPERATING);
+            assertThat(response.getBody().getStatus()).isEqualTo(Status.ACTIVE);
         }
 
         @Test
@@ -142,7 +142,7 @@ public class HotelControllerTest {
             assertThat(response.getBody().getHotelName()).isEqualTo("새로운 호텔");
             assertThat(response.getBody().getAddress()).isEqualTo("서울시 강남구");
             assertThat(response.getBody().getRating()).isEqualTo(4);
-            assertThat(response.getBody().getStatus()).isEqualTo(HotelStatus.OPERATING);
+            assertThat(response.getBody().getStatus()).isEqualTo(Status.ACTIVE);
             assertThat(response.getBody().getHotelId()).isNotNull();
         }
 
@@ -295,7 +295,7 @@ public class HotelControllerTest {
             // 삭제 후 조회해서 상태 확인
             ResponseEntity<HotelResponse> getResponse = restTemplate.getForEntity(url, HotelResponse.class);
             assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(getResponse.getBody().getStatus()).isEqualTo(HotelStatus.CLOSED);
+            assertThat(getResponse.getBody().getStatus()).isEqualTo(Status.INACTIVE);
         }
 
         @Test
@@ -329,7 +329,7 @@ public class HotelControllerTest {
             String url = baseUrl + "/" + hotel.getId() + "/status";
 
             HotelStatusUpdateRequest request = new HotelStatusUpdateRequest();
-            ReflectionTestUtils.setField(request, "status", HotelStatus.SUSPENDED);
+            ReflectionTestUtils.setField(request, "status", Status.UNDER_MAINTENANCE);
 
             HttpEntity<HotelStatusUpdateRequest> entity = new HttpEntity<>(request);
 
@@ -345,7 +345,7 @@ public class HotelControllerTest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().getHotelId()).isEqualTo(hotel.getId());
-            assertThat(response.getBody().getStatus()).isEqualTo(HotelStatus.SUSPENDED);
+            assertThat(response.getBody().getStatus()).isEqualTo(Status.UNDER_MAINTENANCE);
         }
 
         @Test
@@ -356,7 +356,7 @@ public class HotelControllerTest {
             String url = baseUrl + "/" + hotel.getId() + "/status";
 
             HotelStatusUpdateRequest request = new HotelStatusUpdateRequest();
-            ReflectionTestUtils.setField(request, "status", HotelStatus.CLOSED);
+            ReflectionTestUtils.setField(request, "status", Status.INACTIVE);
 
             HttpEntity<HotelStatusUpdateRequest> entity = new HttpEntity<>(request);
 
@@ -372,7 +372,7 @@ public class HotelControllerTest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().getHotelId()).isEqualTo(hotel.getId());
-            assertThat(response.getBody().getStatus()).isEqualTo(HotelStatus.CLOSED);
+            assertThat(response.getBody().getStatus()).isEqualTo(Status.INACTIVE);
         }
 
         @Test
@@ -384,12 +384,12 @@ public class HotelControllerTest {
 
             // 먼저 중지 상태로 변경
             HotelStatusUpdateRequest suspendRequest = new HotelStatusUpdateRequest();
-            ReflectionTestUtils.setField(suspendRequest, "status", HotelStatus.SUSPENDED);
+            ReflectionTestUtils.setField(suspendRequest, "status", Status.UNDER_MAINTENANCE);
             restTemplate.exchange(url, HttpMethod.PATCH, new HttpEntity<>(suspendRequest), HotelResponse.class);
 
             // 운영 중으로 다시 변경
             HotelStatusUpdateRequest operatingRequest = new HotelStatusUpdateRequest();
-            ReflectionTestUtils.setField(operatingRequest, "status", HotelStatus.OPERATING);
+            ReflectionTestUtils.setField(operatingRequest, "status", Status.ACTIVE);
             HttpEntity<HotelStatusUpdateRequest> entity = new HttpEntity<>(operatingRequest);
 
             // when
@@ -404,7 +404,7 @@ public class HotelControllerTest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().getHotelId()).isEqualTo(hotel.getId());
-            assertThat(response.getBody().getStatus()).isEqualTo(HotelStatus.OPERATING);
+            assertThat(response.getBody().getStatus()).isEqualTo(Status.ACTIVE);
         }
 
         @Test
@@ -414,7 +414,7 @@ public class HotelControllerTest {
             String url = baseUrl + "/999/status";
 
             HotelStatusUpdateRequest request = new HotelStatusUpdateRequest();
-            ReflectionTestUtils.setField(request, "status", HotelStatus.SUSPENDED);
+            ReflectionTestUtils.setField(request, "status", Status.UNDER_MAINTENANCE);
 
             HttpEntity<HotelStatusUpdateRequest> entity = new HttpEntity<>(request);
 
@@ -505,7 +505,7 @@ public class HotelControllerTest {
 
             // 4. 호텔 상태를 중지로 변경
             HotelStatusUpdateRequest statusRequest = new HotelStatusUpdateRequest();
-            ReflectionTestUtils.setField(statusRequest, "status", HotelStatus.SUSPENDED);
+            ReflectionTestUtils.setField(statusRequest, "status", Status.UNDER_MAINTENANCE);
 
             ResponseEntity<HotelResponse> statusResponse = restTemplate.exchange(
                     baseUrl + "/" + hotelId + "/status",
@@ -515,7 +515,7 @@ public class HotelControllerTest {
             );
 
             assertThat(statusResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(statusResponse.getBody().getStatus()).isEqualTo(HotelStatus.SUSPENDED);
+            assertThat(statusResponse.getBody().getStatus()).isEqualTo(Status.UNDER_MAINTENANCE);
 
             // 5. 호텔 삭제 (논리적 삭제)
             ResponseEntity<Void> deleteResponse = restTemplate.exchange(
@@ -534,7 +534,7 @@ public class HotelControllerTest {
             );
 
             assertThat(finalGetResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(finalGetResponse.getBody().getStatus()).isEqualTo(HotelStatus.CLOSED);
+            assertThat(finalGetResponse.getBody().getStatus()).isEqualTo(Status.INACTIVE);
         }
     }
 }

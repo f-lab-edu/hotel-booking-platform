@@ -1,7 +1,7 @@
 package dev.muho.hotel.service;
 
 import dev.muho.hotel.domain.Hotel;
-import dev.muho.hotel.domain.HotelStatus;
+import dev.muho.hotel.domain.Status;
 import dev.muho.hotel.dto.request.HotelCreateRequest;
 import dev.muho.hotel.dto.request.HotelStatusUpdateRequest;
 import dev.muho.hotel.dto.request.HotelUpdateRequest;
@@ -63,7 +63,7 @@ public class HotelService {
         Hotel hotel = hotelRepository.findById(hotelId)
                 .orElseThrow(HotelNotFoundException::new);
 
-        hotel.changeStatus(HotelStatus.CLOSED);
+        hotel.changeStatus(Status.INACTIVE);
     }
 
     @Transactional

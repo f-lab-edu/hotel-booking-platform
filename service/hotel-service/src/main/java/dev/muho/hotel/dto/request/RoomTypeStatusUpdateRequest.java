@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 @Getter
-public class HotelStatusUpdateRequest {
+public class RoomTypeStatusUpdateRequest {
 
     @NotNull(message = "상태는 필수입니다.")
     private Status status;

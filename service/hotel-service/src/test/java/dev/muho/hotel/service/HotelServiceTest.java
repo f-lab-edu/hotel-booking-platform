@@ -1,7 +1,7 @@
 package dev.muho.hotel.service;
 
 import dev.muho.hotel.domain.Hotel;
-import dev.muho.hotel.domain.HotelStatus;
+import dev.muho.hotel.domain.Status;
 import dev.muho.hotel.dto.request.HotelCreateRequest;
 import dev.muho.hotel.dto.request.HotelStatusUpdateRequest;
 import dev.muho.hotel.dto.request.HotelUpdateRequest;
@@ -60,7 +60,7 @@ public class HotelServiceTest {
         ReflectionTestUtils.setField(updateRequest, "address", "서울시 마포구");
         ReflectionTestUtils.setField(updateRequest, "rating", 3);
 
-        ReflectionTestUtils.setField(statusUpdateRequest = new HotelStatusUpdateRequest(), "status", HotelStatus.SUSPENDED);
+        ReflectionTestUtils.setField(statusUpdateRequest = new HotelStatusUpdateRequest(), "status", Status.UNDER_MAINTENANCE);
     }
 
     @Nested
@@ -83,7 +83,7 @@ public class HotelServiceTest {
             assertThat(response.getHotelName()).isEqualTo("테스트 호텔");
             assertThat(response.getAddress()).isEqualTo("서울시 강남구");
             assertThat(response.getRating()).isEqualTo(5);
-            assertThat(response.getStatus()).isEqualTo(HotelStatus.OPERATING);
+            assertThat(response.getStatus()).isEqualTo(Status.ACTIVE);
 
             then(hotelRepository).should().findById(hotelId);
         }
@@ -169,7 +169,7 @@ public class HotelServiceTest {
             assertThat(response.getHotelName()).isEqualTo("새로운 호텔");
             assertThat(response.getAddress()).isEqualTo("서울시 종로구");
             assertThat(response.getRating()).isEqualTo(4);
-            assertThat(response.getStatus()).isEqualTo(HotelStatus.OPERATING);
+            assertThat(response.getStatus()).isEqualTo(Status.ACTIVE);
 
             then(hotelRepository).should().save(any(Hotel.class));
         }
@@ -235,7 +235,7 @@ public class HotelServiceTest {
             hotelService.deleteHotel(hotelId);
 
             // then
-            assertThat(hotel.getStatus()).isEqualTo(HotelStatus.CLOSED);
+            assertThat(hotel.getStatus()).isEqualTo(Status.INACTIVE);
 
             then(hotelRepository).should().findById(hotelId);
         }
@@ -272,8 +272,8 @@ public class HotelServiceTest {
             // then
             assertThat(response).isNotNull();
             assertThat(response.getHotelId()).isEqualTo(1L);
-            assertThat(response.getStatus()).isEqualTo(HotelStatus.SUSPENDED);
-            assertThat(hotel.getStatus()).isEqualTo(HotelStatus.SUSPENDED);
+            assertThat(response.getStatus()).isEqualTo(Status.UNDER_MAINTENANCE);
+            assertThat(hotel.getStatus()).isEqualTo(Status.UNDER_MAINTENANCE);
 
             then(hotelRepository).should().findById(hotelId);
         }
@@ -298,7 +298,7 @@ public class HotelServiceTest {
             // given
             Long hotelId = 1L;
             HotelStatusUpdateRequest suspendRequest = new HotelStatusUpdateRequest();
-            ReflectionTestUtils.setField(suspendRequest, "status", HotelStatus.SUSPENDED);
+            ReflectionTestUtils.setField(suspendRequest, "status", Status.UNDER_MAINTENANCE);
             given(hotelRepository.findById(hotelId)).willReturn(Optional.of(hotel));
 
             // when
@@ -306,8 +306,8 @@ public class HotelServiceTest {
 
             // then
             assertThat(response).isNotNull();
-            assertThat(response.getStatus()).isEqualTo(HotelStatus.SUSPENDED);
-            assertThat(hotel.getStatus()).isEqualTo(HotelStatus.SUSPENDED);
+            assertThat(response.getStatus()).isEqualTo(Status.UNDER_MAINTENANCE);
+            assertThat(hotel.getStatus()).isEqualTo(Status.UNDER_MAINTENANCE);
 
             then(hotelRepository).should().findById(hotelId);
         }
@@ -318,7 +318,7 @@ public class HotelServiceTest {
             // given
             Long hotelId = 1L;
             HotelStatusUpdateRequest closedRequest = new HotelStatusUpdateRequest();
-            ReflectionTestUtils.setField(closedRequest, "status", HotelStatus.CLOSED);
+            ReflectionTestUtils.setField(closedRequest, "status", Status.INACTIVE);
             given(hotelRepository.findById(hotelId)).willReturn(Optional.of(hotel));
 
             // when
@@ -326,8 +326,8 @@ public class HotelServiceTest {
 
             // then
             assertThat(response).isNotNull();
-            assertThat(response.getStatus()).isEqualTo(HotelStatus.CLOSED);
-            assertThat(hotel.getStatus()).isEqualTo(HotelStatus.CLOSED);
+            assertThat(response.getStatus()).isEqualTo(Status.INACTIVE);
+            assertThat(hotel.getStatus()).isEqualTo(Status.INACTIVE);
 
             then(hotelRepository).should().findById(hotelId);
         }
@@ -338,10 +338,10 @@ public class HotelServiceTest {
             // given
             Long hotelId = 1L;
             // 먼저 호텔을 중지 상태로 설정
-            hotel.changeStatus(HotelStatus.SUSPENDED);
+            hotel.changeStatus(Status.UNDER_MAINTENANCE);
 
             HotelStatusUpdateRequest operatingRequest = new HotelStatusUpdateRequest();
-            ReflectionTestUtils.setField(operatingRequest, "status", HotelStatus.OPERATING);
+            ReflectionTestUtils.setField(operatingRequest, "status", Status.ACTIVE);
             given(hotelRepository.findById(hotelId)).willReturn(Optional.of(hotel));
 
             // when
@@ -349,8 +349,8 @@ public class HotelServiceTest {
 
             // then
             assertThat(response).isNotNull();
-            assertThat(response.getStatus()).isEqualTo(HotelStatus.OPERATING);
-            assertThat(hotel.getStatus()).isEqualTo(HotelStatus.OPERATING);
+            assertThat(response.getStatus()).isEqualTo(Status.ACTIVE);
+            assertThat(hotel.getStatus()).isEqualTo(Status.ACTIVE);
 
             then(hotelRepository).should().findById(hotelId);
         }

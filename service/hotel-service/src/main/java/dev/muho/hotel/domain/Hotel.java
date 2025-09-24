@@ -39,7 +39,7 @@ public class Hotel extends BaseTimeEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private HotelStatus status = HotelStatus.OPERATING; // 기본값: 운영 중
+    private Status status = Status.ACTIVE;
 
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoomType> roomTypes = new ArrayList<>();
@@ -49,7 +49,7 @@ public class Hotel extends BaseTimeEntity {
         this.name = name;
         this.address = address;
         this.rating = rating;
-        this.status = HotelStatus.OPERATING;
+        this.status = Status.ACTIVE;
     }
 
     /** 호텔 정보 업데이트 메서드 */
@@ -60,7 +60,7 @@ public class Hotel extends BaseTimeEntity {
     }
 
     /** 호텔 상태 변경 메서드 (논리적 삭제 포함) */
-    public void changeStatus(HotelStatus status) {
+    public void changeStatus(Status status) {
         this.status = status;
     }
 }

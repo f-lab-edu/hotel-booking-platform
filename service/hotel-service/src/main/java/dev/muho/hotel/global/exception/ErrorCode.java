@@ -11,6 +11,9 @@ public enum ErrorCode {
     // --- Hotel ---
     HOTEL_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 호텔입니다."),
 
+    // --- Room Type ---
+    ROOM_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 객실 유형입니다."),
+
     // --- Rate ---
     BASE_RATE_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "해당 날짜({0})의 기본 요금 설정을 찾을 수 없습니다."),
 

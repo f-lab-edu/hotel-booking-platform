@@ -55,7 +55,13 @@ public class TestDataSetupService {
                 BaseRate.builder().ratePlan(ratePlan).date(startDate.plusDays(1)).price(new BigDecimal("150000")).build()
         ));
 
-        return hotel;
+        return hotelRepository.findById(hotel.getId()).get();
+    }
+
+    @Transactional
+    public RoomType setupRoomType() {
+        Hotel hotel = hotelRepository.save(Hotel.builder().name("테스트 호텔").address("서울").rating(5).build());
+        return roomTypeRepository.save(RoomType.builder().hotel(hotel).name("스탠다드 더블").maxCapacity(4).standardCapacity(2).build());
     }
 
     @Transactional

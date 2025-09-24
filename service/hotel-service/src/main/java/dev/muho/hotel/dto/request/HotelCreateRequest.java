@@ -1,6 +1,5 @@
 package dev.muho.hotel.dto.request;
 
-import dev.muho.hotel.domain.HotelStatus;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

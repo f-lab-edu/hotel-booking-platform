@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -42,6 +43,9 @@ public class RoomType extends BaseTimeEntity {
     @Column(nullable = false)
     private int maxCapacity; // 최대 인원
 
+    @Column(nullable = false)
+    private Status status = Status.ACTIVE;
+
     @OneToMany(mappedBy = "roomType", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoomInventory> inventories = new ArrayList<>();
 
@@ -54,5 +58,18 @@ public class RoomType extends BaseTimeEntity {
         this.name = name;
         this.standardCapacity = standardCapacity;
         this.maxCapacity = maxCapacity;
+    }
+
+    /** 룸타입 정보 업데이트 메서드 */
+    public void update(String name, int standardCapacity, int maxCapacity, Status status) {
+        this.name = name;
+        this.standardCapacity = standardCapacity;
+        this.maxCapacity = maxCapacity;
+        this.status = status;
+    }
+
+    /** 룸타입 상태 변경 메서드 */
+    public void changeStatus(Status status) {
+        this.status = status;
     }
 }
