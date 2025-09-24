@@ -1,6 +1,5 @@
 package dev.muho.hotel.global.exception;
 
-import dev.muho.hotellegacy.common.RequestValidationErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

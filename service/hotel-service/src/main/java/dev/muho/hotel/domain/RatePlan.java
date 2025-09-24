@@ -38,18 +38,26 @@ public class RatePlan extends BaseTimeEntity {
     private String name; // 예: "얼리버드 특가", "조식 포함"
 
     /**
-     * 현재 판매 가능 여부를 나타냅니다.
-     * false일 경우, 사용자에게 노출되거나 예약되지 않습니다.
-     */
-    @Column(nullable = false)
-    private boolean onSale = true;
-
-    /**
      * 이 요금제로 예약하기 위한 최소 숙박일 조건입니다.
-     * 0 또는 1은 조건 없음을 의미합니다.
+     * 1은 조건 없음을 의미합니다.
      */
     @Column(nullable = false)
     private int minNights = 1;
+
+    /**
+     * 조식 포함 여부를 나타냅니다.
+     */
+    @Column(nullable = false)
+    private boolean includesBreakfast = false;
+
+    /**
+     * 환불 가능 여부를 나타냅니다.
+     */
+    @Column(nullable = false)
+    private boolean refundable = true;
+
+    @Column(nullable = false)
+    private Status status = Status.ACTIVE;
 
     /**
      * 이 요금제로 예약할 수 있는 최대 숙박일 조건입니다.
@@ -87,7 +95,8 @@ public class RatePlan extends BaseTimeEntity {
     @Builder
     public RatePlan(RoomType roomType,
                     String name,
-                    boolean onSale,
+                    boolean includesBreakfast,
+                    boolean refundable,
                     int minNights,
                     Integer maxNights,
                     LocalDate bookingStartDate,
@@ -96,12 +105,43 @@ public class RatePlan extends BaseTimeEntity {
                     LocalDate checkInEndDate) {
         this.roomType = roomType;
         this.name = name;
-        this.onSale = onSale;
+        this.includesBreakfast = includesBreakfast;
+        this.refundable = refundable;
         this.minNights = minNights;
         this.maxNights = maxNights;
         this.bookingStartDate = bookingStartDate;
         this.bookingEndDate = bookingEndDate;
         this.checkInStartDate = checkInStartDate;
         this.checkInEndDate = checkInEndDate;
+    }
+
+    public void update(String name,
+                       boolean includesBreakfast,
+                       boolean refundable,
+                       int minNights,
+                       Integer maxNights,
+                       Status status,
+                       LocalDate bookingStartDate,
+                       LocalDate bookingEndDate,
+                       LocalDate checkInStartDate,
+                       LocalDate checkInEndDate) {
+        this.name = name;
+        this.includesBreakfast = includesBreakfast;
+        this.refundable = refundable;
+        this.minNights = minNights;
+        this.maxNights = maxNights;
+        this.status = status;
+        this.bookingStartDate = bookingStartDate;
+        this.bookingEndDate = bookingEndDate;
+        this.checkInStartDate = checkInStartDate;
+        this.checkInEndDate = checkInEndDate;
+    }
+
+    public void updateStatus(Status status) {
+        this.status = status;
+    }
+
+    public boolean isOnSale() {
+        return this.status == Status.ACTIVE;
     }
 }

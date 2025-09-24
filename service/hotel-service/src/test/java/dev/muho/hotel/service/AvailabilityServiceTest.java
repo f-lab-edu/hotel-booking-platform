@@ -54,7 +54,7 @@ public class AvailabilityServiceTest {
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
         ReflectionTestUtils.setField(hotel, "id", 1L);
 
-        RatePlan ratePlan = RatePlan.builder().name("기본 플랜").onSale(true).minNights(1).build();
+        RatePlan ratePlan = RatePlan.builder().name("기본 플랜").minNights(1).build();
         ReflectionTestUtils.setField(ratePlan, "id", 1L);
 
         RoomType roomType = RoomType.builder().hotel(hotel).maxCapacity(4).build();
@@ -105,7 +105,7 @@ public class AvailabilityServiceTest {
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
         ReflectionTestUtils.setField(hotel, "id", 1L);
 
-        RatePlan ratePlan = RatePlan.builder().name("기본 플랜").onSale(true).minNights(1).build();
+        RatePlan ratePlan = RatePlan.builder().name("기본 플랜").minNights(1).build();
         ReflectionTestUtils.setField(ratePlan, "id", 1L);
 
         RoomType roomType = RoomType.builder().hotel(hotel).maxCapacity(4).build();
@@ -186,7 +186,8 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(hotel, "id", 1L);
 
         // 판매 중단된 요금제
-        RatePlan ratePlan = RatePlan.builder().name("중단된 플랜").onSale(false).minNights(1).build();
+        RatePlan ratePlan = RatePlan.builder().name("중단된 플랜").minNights(1).build();
+        ratePlan.updateStatus(Status.INACTIVE);
         ReflectionTestUtils.setField(ratePlan, "id", 1L);
 
         RoomType roomType = RoomType.builder().hotel(hotel).maxCapacity(4).build();
@@ -223,7 +224,7 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(hotel, "id", 1L);
 
         // 최소 3박 이상 필요한 요금제
-        RatePlan ratePlan = RatePlan.builder().name("장기 플랜").onSale(true).minNights(3).build();
+        RatePlan ratePlan = RatePlan.builder().name("장기 플랜").minNights(3).build();
         ReflectionTestUtils.setField(ratePlan, "id", 1L);
 
         RoomType roomType = RoomType.builder().hotel(hotel).maxCapacity(4).build();
@@ -258,7 +259,7 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(hotel, "id", 1L);
 
         // 최대 5박까지만 허용하는 요금제
-        RatePlan ratePlan = RatePlan.builder().name("단기 플랜").onSale(true).minNights(1).maxNights(5).build();
+        RatePlan ratePlan = RatePlan.builder().name("단기 플랜").minNights(1).maxNights(5).build();
         ReflectionTestUtils.setField(ratePlan, "id", 1L);
 
         RoomType roomType = RoomType.builder().hotel(hotel).maxCapacity(4).build();
@@ -297,7 +298,7 @@ public class AvailabilityServiceTest {
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
         ReflectionTestUtils.setField(hotel, "id", 1L);
 
-        RatePlan ratePlan = RatePlan.builder().name("할인 플랜").onSale(true).minNights(1).build();
+        RatePlan ratePlan = RatePlan.builder().name("할인 플랜").minNights(1).build();
         ReflectionTestUtils.setField(ratePlan, "id", 1L);
 
         RoomType roomType = RoomType.builder().hotel(hotel).maxCapacity(4).build();
@@ -356,7 +357,7 @@ public class AvailabilityServiceTest {
         Hotel hotel = Hotel.builder().name("테스트 호텔").build();
         ReflectionTestUtils.setField(hotel, "id", 1L);
 
-        RatePlan ratePlan = RatePlan.builder().name("할증 플랜").onSale(true).minNights(1).build();
+        RatePlan ratePlan = RatePlan.builder().name("할증 플랜").minNights(1).build();
         ReflectionTestUtils.setField(ratePlan, "id", 1L);
 
         RoomType roomType = RoomType.builder().hotel(hotel).maxCapacity(4).build();
@@ -416,9 +417,9 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(hotel, "id", 1L);
 
         // 두 개의 요금제
-        RatePlan ratePlan1 = RatePlan.builder().name("기본 플랜").onSale(true).minNights(1).build();
+        RatePlan ratePlan1 = RatePlan.builder().name("기본 플랜").minNights(1).build();
         ReflectionTestUtils.setField(ratePlan1, "id", 1L);
-        RatePlan ratePlan2 = RatePlan.builder().name("프리미엄 플랜").onSale(true).minNights(1).build();
+        RatePlan ratePlan2 = RatePlan.builder().name("프리미엄 플랜").minNights(1).build();
         ReflectionTestUtils.setField(ratePlan2, "id", 2L);
 
         // 두 개의 객실 타입
@@ -494,7 +495,7 @@ public class AvailabilityServiceTest {
         // 예약 기간이 지난 요금제 (예약 마감일이 과거)
         RatePlan ratePlan = RatePlan.builder()
                 .name("마감된 플랜")
-                .onSale(true)
+                
                 .minNights(1)
                 .bookingStartDate(TestDateUtils.getFutureLocalDatePlusDays(-60))
                 .bookingEndDate(TestDateUtils.getFutureLocalDatePlusDays(-30)) // 예약 마감일이 과거
@@ -537,7 +538,7 @@ public class AvailabilityServiceTest {
         // 숙박 가능 기간이 지난 요금제 (체크인 허용 마감일이 과거)
         RatePlan ratePlan = RatePlan.builder()
                 .name("기간 만료 플랜")
-                .onSale(true)
+                
                 .minNights(1)
                 .checkInStartDate(TestDateUtils.getFutureLocalDatePlusDays(-60))
                 .checkInEndDate(TestDateUtils.getFutureLocalDatePlusDays(-30)) // 체크인 허용 마감일이 과거

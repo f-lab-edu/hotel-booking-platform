@@ -37,7 +37,7 @@ public class TestDataSetupService {
     public Hotel setupHotel() {
         Hotel hotel = hotelRepository.save(Hotel.builder().name("테스트 호텔").address("서울").rating(5).build());
         RoomType roomType = roomTypeRepository.save(RoomType.builder().hotel(hotel).name("스탠다드 더블").maxCapacity(4).standardCapacity(2).build());
-        RatePlan ratePlan = ratePlanRepository.save(RatePlan.builder().roomType(roomType).name("기본 플랜").onSale(true).minNights(1).build());
+        RatePlan ratePlan = ratePlanRepository.save(RatePlan.builder().roomType(roomType).name("기본 플랜").minNights(1).build());
 
         // 동적 날짜로 변경 - 30일 후부터 데이터 설정
         LocalDate startDate = TestDateUtils.getFutureLocalDatePlusDays(30);
@@ -62,6 +62,24 @@ public class TestDataSetupService {
     public RoomType setupRoomType() {
         Hotel hotel = hotelRepository.save(Hotel.builder().name("테스트 호텔").address("서울").rating(5).build());
         return roomTypeRepository.save(RoomType.builder().hotel(hotel).name("스탠다드 더블").maxCapacity(4).standardCapacity(2).build());
+    }
+
+    @Transactional
+    public RatePlan setupRatePlan(RoomType roomType) {
+        return ratePlanRepository.save(
+            RatePlan.builder()
+                .roomType(roomType)
+                .name("기본 요금제")
+                .includesBreakfast(false)
+                .refundable(true)
+                .minNights(1)
+                .maxNights(7)
+                .bookingStartDate(LocalDate.of(2024, 1, 1))
+                .bookingEndDate(LocalDate.of(2024, 12, 31))
+                .checkInStartDate(LocalDate.of(2024, 1, 1))
+                .checkInEndDate(LocalDate.of(2024, 12, 31))
+                .build()
+        );
     }
 
     @Transactional
