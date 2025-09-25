@@ -46,4 +46,8 @@ public class BaseRate extends BaseTimeEntity {
         this.date = date;
         this.price = price;
     }
+
+    public void updatePrice(BigDecimal newPrice) {
+        this.price = newPrice;
+    }
 }
