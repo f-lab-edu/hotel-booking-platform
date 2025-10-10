@@ -11,7 +11,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -71,5 +70,10 @@ public class RoomType extends BaseTimeEntity {
     /** 룸타입 상태 변경 메서드 */
     public void changeStatus(Status status) {
         this.status = status;
+    }
+
+    /** 인원 수가 룸타입의 최대 수용 인원을 초과하는지 여부를 확인하는 메서드 */
+    public boolean validateCapacity(int numOfAdult, int numOfChildren) {
+        return this.maxCapacity >= numOfAdult + numOfChildren;
     }
 }
