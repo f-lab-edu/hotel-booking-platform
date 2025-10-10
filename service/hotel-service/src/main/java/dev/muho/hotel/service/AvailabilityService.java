@@ -6,6 +6,7 @@ import dev.muho.hotel.domain.CalculationType;
 import dev.muho.hotel.domain.Hotel;
 import dev.muho.hotel.domain.PriceAdjustment;
 import dev.muho.hotel.domain.RatePlan;
+import dev.muho.hotel.domain.RoomInventory;
 import dev.muho.hotel.domain.RoomType;
 import dev.muho.hotel.dto.request.AvailabilityRequest;
 import dev.muho.hotel.dto.response.AvailabilityResponse;
@@ -16,6 +17,7 @@ import dev.muho.hotel.global.exception.HotelNotFoundException;
 import dev.muho.hotel.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -79,25 +82,32 @@ public class AvailabilityService {
      * @return 예약 가능한 객실 타입과 요금제 정보가 포함된 응답 객체
      * @throws HotelNotFoundException 존재하지 않는 호텔 ID인 경우
      */
-    public AvailabilityResponse checkAvailability(Long hotelId, AvailabilityRequest request) {
+    public CompletableFuture<AvailabilityResponse> checkAvailabilityAsync(Long hotelId, AvailabilityRequest request) {
         Hotel hotel = hotelRepository.findById(hotelId)
                 .orElseThrow(HotelNotFoundException::new);
 
-        List<RoomType> roomTypes = roomTypeRepository.findByHotel(hotel);
-
-        List<AvailableRoomTypeDto> availableRoomTypeDtos = roomTypes.stream()
-                .filter(roomType -> roomType.getMaxCapacity() >= (request.getAdults() + request.getChildren()))
-                .map(roomType -> toAvailableRoomTypeDto(roomType, request.getCheckInDate(), request.getCheckOutDate()))
-                .filter(dto -> dto != null && !dto.getAvailableRatePlans().isEmpty()) // 판매 가능한 요금제가 하나라도 있는 경우만 필터링
+        List<CompletableFuture<AvailableRoomTypeDto>> futures = hotel.getRoomTypes().stream()
+                .filter(roomType -> roomType.validateCapacity(request.getAdults(), request.getChildren()))
+                .map(roomType -> toAvailableRoomTypeDtoAsync(roomType, request.getCheckInDate(), request.getCheckOutDate()))
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        return AvailabilityResponse.builder()
-                .hotelId(hotel.getId())
-                .hotelName(hotel.getName())
-                .checkInDate(request.getCheckInDate())
-                .checkOutDate(request.getCheckOutDate())
-                .availableRoomTypes(availableRoomTypeDtos)
-                .build();
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+        return allFutures.thenApply(v -> {
+            List<AvailableRoomTypeDto> availableRoomTypes = futures.stream()
+                    .map(CompletableFuture::join) // 각 Future의 결과를 가져옴
+                    .filter(dto -> dto != null && !dto.getAvailableRatePlans().isEmpty()) // 판매 가능한 요금제가 하나라도 있는 경우만 필터링
+                    .collect(Collectors.toList());
+
+            return AvailabilityResponse.builder()
+                    .hotelId(hotel.getId())
+                    .hotelName(hotel.getName())
+                    .checkInDate(request.getCheckInDate())
+                    .checkOutDate(request.getCheckOutDate())
+                    .availableRoomTypes(availableRoomTypes)
+                    .build();
+        });
     }
 
     /**
@@ -115,7 +125,8 @@ public class AvailabilityService {
      * @param checkOutDate 체크아웃 날짜
      * @return 예약 가능한 경우 AvailableRoomTypeDto, 불가능한 경우 null
      */
-    private AvailableRoomTypeDto toAvailableRoomTypeDto(RoomType roomType, LocalDate checkInDate, LocalDate checkOutDate) {
+    @Async
+    protected CompletableFuture<AvailableRoomTypeDto> toAvailableRoomTypeDtoAsync(RoomType roomType, LocalDate checkInDate, LocalDate checkOutDate) {
         List<LocalDate> dates = checkInDate.datesUntil(checkOutDate).collect(Collectors.toList());
 
         int minAvailableRooms = getMinimumAvailableRooms(roomType, dates);
@@ -124,7 +135,7 @@ public class AvailabilityService {
         }
 
         List<AvailableRatePlanDto> availableRatePlans = roomType.getRatePlans().stream()
-                .filter(ratePlan -> isPlanAvailable(ratePlan, checkInDate, checkOutDate)) // 요금제 판매 기간 등 조건 체크
+                .filter(ratePlan -> ratePlan.isAvailableFor(checkInDate, checkOutDate))
                 .map(ratePlan -> {
                     try {
                         BigDecimal totalPrice = calculateTotalPriceForPlan(ratePlan, dates);
@@ -145,7 +156,7 @@ public class AvailabilityService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        return AvailableRoomTypeDto.builder()
+        var dto = AvailableRoomTypeDto.builder()
                 .roomTypeId(roomType.getId())
                 .roomTypeName(roomType.getName())
                 .standardCapacity(roomType.getStandardCapacity())
@@ -153,60 +164,7 @@ public class AvailabilityService {
                 .remainingRooms(minAvailableRooms)
                 .availableRatePlans(availableRatePlans) // 3. 계산된 요금제 목록을 DTO에 담는다.
                 .build();
-    }
-
-    /**
-     * 요금제가 주어진 예약 조건에 대해 판매 가능한지 확인합니다.
-     *
-     * <p>다음과 같은 조건들을 순차적으로 검증합니다:</p>
-     * <ul>
-     *   <li><strong>판매 상태:</strong> 요금제가 현재 판매 중인지 확인</li>
-     *   <li><strong>예약 가능 기간:</strong> 오늘 날짜가 요금제의 예약 접수 기간 내인지 확인</li>
-     *   <li><strong>숙박 가능 기간:</strong> 체크인 날짜가 요금제의 숙박 허용 기간 내인지 확인</li>
-     *   <li><strong>최소/최대 숙박일:</strong> 숙박 일수가 요금제의 최소/최대 조건을 만족하는지 확인</li>
-     * </ul>
-     *
-     * @param ratePlan 확인할 요금제
-     * @param checkInDate 체크인 날짜
-     * @param checkOutDate 체크아웃 날짜
-     * @return 모든 조건을 만족하면 true, 그렇지 않으면 false
-     */
-    private boolean isPlanAvailable(RatePlan ratePlan, LocalDate checkInDate, LocalDate checkOutDate) {
-        if (!ratePlan.isOnSale()) {
-            return false;
-        }
-
-        // 예약 가능 기간(Booking Window) 확인
-        // "오늘" 날짜가 요금제를 예약할 수 있는 기간에 속하는지 검사합니다.
-        LocalDate today = LocalDate.now();
-        if (ratePlan.getBookingStartDate() != null && today.isBefore(ratePlan.getBookingStartDate())) {
-            return false;
-        }
-        if (ratePlan.getBookingEndDate() != null && today.isAfter(ratePlan.getBookingEndDate())) {
-            return false;
-        }
-
-        // 숙박 가능 기간(Stay Window) 확인
-        // 사용자가 요청한 "체크인 날짜"가 요금제가 허용하는 숙박 기간에 속하는지 검사합니다.
-        if (ratePlan.getCheckInStartDate() != null && checkInDate.isBefore(ratePlan.getCheckInStartDate())) {
-            return false;
-        }
-        if (ratePlan.getCheckInEndDate() != null && checkInDate.isAfter(ratePlan.getCheckInEndDate())) {
-            return false;
-        }
-
-        // 최소/최대 숙박일(Duration) 확인
-        // 사용자가 요청한 숙박 기간이 요금제의 최소/최대 숙박일 조건을 만족하는지 검사합니다.
-        long duration = ChronoUnit.DAYS.between(checkInDate, checkOutDate);
-        if (duration < ratePlan.getMinNights()) {
-            return false;
-        }
-        if (ratePlan.getMaxNights() != null && duration > ratePlan.getMaxNights()) {
-            return false;
-        }
-
-        // 모든 조건을 통과하면 판매 가능한 것으로 판단
-        return true;
+        return CompletableFuture.completedFuture(dto);
     }
 
     /**
@@ -279,7 +237,7 @@ public class AvailabilityService {
         var inventories = roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates);
         if (inventories.size() != dates.size()) { return 0; }
         return inventories.stream()
-                .mapToInt(inventory -> inventory.getTotalQuantity() - inventory.getReservedQuantity())
+                .mapToInt(RoomInventory::getAvailableQuantity)
                 .min()
                 .orElse(0);
     }
