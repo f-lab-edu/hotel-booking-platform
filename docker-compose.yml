@@ -1,6 +1,40 @@
 version: "3.8"
 
 services:
+  hotel-service:
+    build:
+      context: .
+      dockerfile: ./service/hotel-service/Dockerfile
+    container_name: hotel-service
+    ports:
+      - "${HOTEL_SERVICE_PORT}:8080"
+    depends_on:
+      hotel-db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=hotel-db
+      - DB_NAME=${HOTEL_DB_NAME}
+      - DB_USERNAME=${HOTEL_DB_USERNAME}
+      - DB_PASSWORD=${HOTEL_DB_PASSWORD}
+
+  hotel-db:
+    image: postgres:15
+    container_name: hotel-db
+    volumes:
+      - hotel-db-data:/var/lib/postgresql/data
+    ports:
+      - "${HOTEL_DB_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${HOTEL_DB_NAME}
+      - POSTGRES_USER=${HOTEL_DB_USERNAME}
+      - POSTGRES_PASSWORD=${HOTEL_DB_PASSWORD}
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${HOTEL_DB_USERNAME} -d ${HOTEL_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   user-service:
     build:
       context: .
@@ -59,5 +93,6 @@ services:
       retries: 5
 
 volumes:
+  hotel-db-data:
   user-db-data:
   user-redis-data:
