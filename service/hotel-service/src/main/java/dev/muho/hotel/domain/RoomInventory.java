@@ -91,4 +91,12 @@ public class RoomInventory extends BaseTimeEntity {
         }
         this.totalQuantity = totalQuantity;
     }
+
+    /**
+     * 사용 가능한 재고 수량을 반환합니다.
+     * @return 사용 가능한 재고 수량
+     */
+    public int getAvailableQuantity() {
+        return this.totalQuantity - this.reservedQuantity;
+    }
 }

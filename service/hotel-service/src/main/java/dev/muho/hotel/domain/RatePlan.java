@@ -17,6 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -143,5 +144,36 @@ public class RatePlan extends BaseTimeEntity {
 
     public boolean isOnSale() {
         return this.status == Status.ACTIVE;
+    }
+
+    public boolean isAvailableFor(LocalDate checkInDate, LocalDate checkOutDate) {
+        if (!this.isOnSale()) {
+            return false;
+        }
+
+        LocalDate today = LocalDate.now();
+        if (this.bookingStartDate != null && today.isBefore(this.bookingStartDate)) {
+            return false;
+        }
+        if (this.bookingEndDate != null && today.isAfter(this.bookingEndDate)) {
+            return false;
+        }
+
+        if (this.checkInStartDate != null && checkInDate.isBefore(this.checkInStartDate)) {
+            return false;
+        }
+        if (this.checkInEndDate != null && checkInDate.isAfter(this.checkInEndDate)) {
+            return false;
+        }
+
+        long duration = ChronoUnit.DAYS.between(checkInDate, checkOutDate);
+        if (duration < this.minNights) {
+            return false;
+        }
+        if (this.maxNights != null && duration > this.maxNights) {
+            return false;
+        }
+
+        return true;
     }
 }
