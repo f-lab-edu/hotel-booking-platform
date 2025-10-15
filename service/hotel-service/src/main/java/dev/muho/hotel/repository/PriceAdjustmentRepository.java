@@ -12,4 +12,7 @@ import java.util.List;
 public interface PriceAdjustmentRepository extends JpaRepository<PriceAdjustment, Long>, JpaSpecificationExecutor<PriceAdjustment> {
     @Query("SELECT pa FROM PriceAdjustment pa WHERE pa.ratePlan = :ratePlan AND pa.startDate <= :stayEnd AND pa.endDate >= :stayStart")
     List<PriceAdjustment> findActiveAdjustmentsForPlanInDateRange(RatePlan ratePlan, LocalDate stayStart, LocalDate stayEnd);
+
+    @Query("SELECT pa FROM PriceAdjustment pa WHERE pa.ratePlan IN :ratePlans AND pa.startDate <= :stayEnd AND pa.endDate >= :stayStart")
+    List<PriceAdjustment> findActiveAdjustmentsByRatePlanInDateRange(List<RatePlan> ratePlans, LocalDate stayStart, LocalDate stayEnd);
 }

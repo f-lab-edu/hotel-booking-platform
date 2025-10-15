@@ -17,40 +17,29 @@ import dev.muho.hotel.global.exception.HotelNotFoundException;
 import dev.muho.hotel.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 호텔 객실 예약 가능성을 조회하는 서비스 클래스입니다.
+ * 객실 예약 가능 여부(Availability) 조회를 처리하는 서비스 클래스입니다.
  *
- * <p>이 서비스는 다음과 같은 주요 기능을 제공합니다:</p>
+ * <p>주요 기능:</p>
  * <ul>
- *   <li>특정 호텔의 예약 가능한 객실 타입 조회</li>
- *   <li>각 객실 타입별 재고 확인</li>
- *   <li>판매 가능한 요금제 필터링</li>
- *   <li>기본 요금 + 할인/할증 적용한 최종 가격 계산</li>
+ *   <li>호텔 및 객실 타입, 요금제, 재고, 가격 조정 데이터 조회</li>
+ *   <li>투숙 인원수에 맞는 객실 타입 필터링</li>
+ *   <li>숙박 기간 중 최소 재고량 확인</li>
+ *   <li>요금제 판매 조건 검증 (판매 기간, 예약 기간, 최소/최대 숙박일)</li>
+ *   <li>일별 기본 요금에 가격 조정(할인/할증) 적용하여 총 숙박비 계산</li>
+ *   <li>예약 가능한 객실 타입과 요금제를 응답 DTO로 변환</li>
  * </ul>
- *
- * <p>주요 비즈니스 로직:</p>
- * <ol>
- *   <li>호텔 정보 조회 및 유효성 검증</li>
- *   <li>투숙 인원수 기준 객실 타입 필터링</li>
- *   <li>각 객실 타입별 재고 확인 (숙박 기간 중 최소 재고량)</li>
- *   <li>요금제 판매 조건 확인 (판매 기간, 예약 기간, 최소/최대 숙박일)</li>
- *   <li>일별 기본 요금 + 가격 조정(할인/할증) 적용하여 총 숙박비 계산</li>
- * </ol>
- *
- * @author muho
- * @since 1.0
  */
 @Slf4j
 @Service
@@ -66,180 +55,130 @@ public class AvailabilityService {
     private final PriceAdjustmentRepository priceAdjustmentRepository;
 
     /**
-     * 지정된 조건에 따라 호텔의 예약 가능한 객실과 요금 정보를 조회합니다.
+     * 특정 호텔의 객실 예약 가능 여부를 조회합니다.
      *
-     * <p>이 메서드는 다음과 같은 순서로 처리됩니다:</p>
+     * <p>조회 로직:</p>
      * <ol>
-     *   <li>호텔 정보 조회 및 존재 여부 확인</li>
-     *   <li>호텔의 모든 객실 타입 조회</li>
-     *   <li>투숙 인원수 기준으로 수용 가능한 객실 타입 필터링</li>
-     *   <li>각 객실 타입별 예약 가능성 및 요금 계산</li>
-     *   <li>판매 가능한 요금제가 있는 객실 타입만 최종 결과에 포함</li>
+     *   <li>호텔 정보 조회 및 판매 여부 확인</li>
+     *   <li>투숙 인원수에 맞는 객실 타입 필터링</li>
+     *   <li>각 객실 타입별 재고 확인 (숙박 기간 중 최소 재고량)</li>
+     *   <li>요금제 판매 조건 확인 (판매 기간, 예약 기간, 최소/최대 숙박일)</li>
+     *   <li>일별 기본 요금 + 가격 조정(할인/할증) 적용하여 총 숙박비 계산</li>
+     *   <li>예약 가능한 객실 타입과 요금제를 응답 DTO로 변환</li>
      * </ol>
      *
-     * @param hotelId 조회할 호텔의 ID
-     * @param request 예약 가능성 조회 요청 객체
-     * @return 예약 가능한 객실 타입과 요금제 정보가 포함된 응답 객체
-     * @throws HotelNotFoundException 존재하지 않는 호텔 ID인 경우
+     * @param hotelId 조회할 호텔 ID
+     * @param request 조회 조건 (체크인/체크아웃 날짜, 투숙 인원수 등)
+     * @return 예약 가능한 객실 타입과 요금제를 포함한 응답 DTO
+     * @throws HotelNotFoundException 호텔 ID에 해당하는 호텔이 없는 경우
      */
-    public CompletableFuture<AvailabilityResponse> checkAvailabilityAsync(Long hotelId, AvailabilityRequest request) {
+    public AvailabilityResponse checkAvailability(Long hotelId, AvailabilityRequest request) {
         Hotel hotel = hotelRepository.findById(hotelId)
                 .orElseThrow(HotelNotFoundException::new);
 
-        List<CompletableFuture<AvailableRoomTypeDto>> futures = hotel.getRoomTypes().stream()
-                .filter(roomType -> roomType.validateCapacity(request.getAdults(), request.getChildren()))
-                .map(roomType -> toAvailableRoomTypeDtoAsync(roomType, request.getCheckInDate(), request.getCheckOutDate()))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-
-        return allFutures.thenApply(v -> {
-            List<AvailableRoomTypeDto> availableRoomTypes = futures.stream()
-                    .map(CompletableFuture::join) // 각 Future의 결과를 가져옴
-                    .filter(dto -> dto != null && !dto.getAvailableRatePlans().isEmpty()) // 판매 가능한 요금제가 하나라도 있는 경우만 필터링
-                    .collect(Collectors.toList());
-
+        // 호텔이 판매 중이지 않으면 빈 결과 반환
+        if (!hotel.isOnSale()) {
             return AvailabilityResponse.builder()
                     .hotelId(hotel.getId())
                     .hotelName(hotel.getName())
                     .checkInDate(request.getCheckInDate())
                     .checkOutDate(request.getCheckOutDate())
-                    .availableRoomTypes(availableRoomTypes)
+                    .availableRoomTypes(List.of())
                     .build();
-        });
-    }
-
-    /**
-     * RoomType 엔터티를 AvailableRoomTypeDto로 변환하고 예약 가능성을 확인합니다.
-     *
-     * <p>이 메서드는 다음과 같은 작업을 수행합니다:</p>
-     * <ul>
-     *   <li>숙박 기간 동안의 최소 가용 객실 수 계산</li>
-     *   <li>객실 타입에 연결된 모든 요금제의 판매 가능 여부 확인</li>
-     *   <li>판매 가능한 요금제별 총 숙박비 계산</li>
-     * </ul>
-     *
-     * @param roomType 변환할 객실 타입 엔터티
-     * @param checkInDate 체크인 날짜
-     * @param checkOutDate 체크아웃 날짜
-     * @return 예약 가능한 경우 AvailableRoomTypeDto, 불가능한 경우 null
-     */
-    @Async
-    protected CompletableFuture<AvailableRoomTypeDto> toAvailableRoomTypeDtoAsync(RoomType roomType, LocalDate checkInDate, LocalDate checkOutDate) {
-        List<LocalDate> dates = checkInDate.datesUntil(checkOutDate).collect(Collectors.toList());
-
-        int minAvailableRooms = getMinimumAvailableRooms(roomType, dates);
-        if (minAvailableRooms <= 0) {
-            return null;
         }
 
-        List<AvailableRatePlanDto> availableRatePlans = roomType.getRatePlans().stream()
-                .filter(ratePlan -> ratePlan.isAvailableFor(checkInDate, checkOutDate))
-                .map(ratePlan -> {
-                    try {
-                        BigDecimal totalPrice = calculateTotalPriceForPlan(ratePlan, dates);
-                        return AvailableRatePlanDto.builder()
-                                .ratePlanId(ratePlan.getId())
-                                .ratePlanName(ratePlan.getName())
-                                .totalPrice(totalPrice)
-                                .build();
-                    } catch (BaseRateNotFoundException e) {
-                        log.warn("객실 타입 [{}(id:{})]의 요금제 [{}(id:{})]는 기본 요금이 없어 판매 불가합니다.",
-                                roomType.getName(),
-                                roomType.getId(),
-                                ratePlan.getName(),
-                                ratePlan.getId());
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        List<RoomType> roomTypes = roomTypeRepository.findByHotelIdWithRatePlans(hotelId);
+        List<RatePlan> ratePlans = roomTypes.stream()
+                .flatMap(rt -> rt.getRatePlans().stream())
+                .toList();
 
-        var dto = AvailableRoomTypeDto.builder()
-                .roomTypeId(roomType.getId())
-                .roomTypeName(roomType.getName())
-                .standardCapacity(roomType.getStandardCapacity())
-                .maxCapacity(roomType.getMaxCapacity())
-                .remainingRooms(minAvailableRooms)
-                .availableRatePlans(availableRatePlans) // 3. 계산된 요금제 목록을 DTO에 담는다.
+        List<LocalDate> stayDates = request.getCheckInDate().datesUntil(request.getCheckOutDate()).toList();
+
+        // 숙박 기간에 해당하는 객실 재고, 기본 요금, 가격 조정 데이터를 모두 가져온 뒤 Id로 그룹화합니다.
+        Map<Long, List<RoomInventory>> inventoriesByRoomType = roomInventoryRepository
+                .findByRoomTypeInAndDateIn(roomTypes, stayDates)
+                .stream()
+                .collect(Collectors.groupingBy(ri -> ri.getRoomType().getId()));
+
+        Map<Long, List<BaseRate>> baseRatesByRatePlan = baseRateRepository
+                .findByRatePlanInAndDateIn(ratePlans, stayDates)
+                .stream()
+                .collect(Collectors.groupingBy(br -> br.getRatePlan().getId()));
+
+        Map<Long, List<PriceAdjustment>> adjustmentsByRatePlan = priceAdjustmentRepository
+                .findActiveAdjustmentsByRatePlanInDateRange(
+                        ratePlans,
+                        stayDates.get(0),
+                        stayDates.get(stayDates.size() - 1))
+                .stream()
+                .collect(Collectors.groupingBy(pa -> pa.getRatePlan().getId()));
+
+        List<AvailableRoomTypeDto> availableRoomTypes = new ArrayList<>();
+
+        for (RoomType roomType : roomTypes) {
+            // 객실이 판매 중인지, 인원수 조건에 맞는지 확인
+            if (!roomType.isOnSale() || !roomType.validateCapacity(request.getAdults(), request.getChildren())) {
+                continue;
+            }
+
+            // 해당 객실 타입의 숙박 기간 중 최소 재고 수량 확인
+            List<RoomInventory> inventories = inventoriesByRoomType.getOrDefault(roomType.getId(), List.of());
+            int minAvailableRooms = getMinimumAvailableRooms(inventories, stayDates);
+            if (minAvailableRooms <= 0) {
+                continue;
+            }
+
+            // 이 객실 타입의 각 요금제별로 판매 조건 확인 및 총 숙박비 계산
+            List<AvailableRatePlanDto> availableRatePlans = new ArrayList<>();
+            for (RatePlan ratePlan : roomType.getRatePlans()) {
+                // 숙박 기간이 요금제의 판매 조건에 맞는지 확인
+                if (!ratePlan.isAvailableFor(request.getCheckInDate(), request.getCheckOutDate())) {
+                    continue;
+                }
+
+                List<BaseRate> baseRates = baseRatesByRatePlan.getOrDefault(ratePlan.getId(), List.of());
+                List<PriceAdjustment> adjustments = adjustmentsByRatePlan.getOrDefault(ratePlan.getId(), List.of());
+
+                // 이 요금제의 총 숙박비 계산
+                try {
+                    BigDecimal totalPrice = calculateTotalPriceForPlan(baseRates, adjustments, stayDates);
+                    var availableRatePlanDto = AvailableRatePlanDto.builder()
+                            .ratePlanId(ratePlan.getId())
+                            .ratePlanName(ratePlan.getName())
+                            .totalPrice(totalPrice)
+                            .build();
+                    availableRatePlans.add(availableRatePlanDto);
+                } catch (BaseRateNotFoundException e) {
+                    log.warn("객실 타입 [{}(id:{})]의 요금제 [{}(id:{})]는 기본 요금이 없어 판매 불가합니다.",
+                            roomType.getName(),
+                            roomType.getId(),
+                            ratePlan.getName(),
+                            ratePlan.getId());
+                }
+            }
+
+            // 이 객실 타입에 예약 가능한 요금제가 하나도 없으면 제외
+            if (availableRatePlans.isEmpty()) {
+                continue;
+            }
+            var availableRoomTypeDto = AvailableRoomTypeDto.builder()
+                    .roomTypeId(roomType.getId())
+                    .roomTypeName(roomType.getName())
+                    .standardCapacity(roomType.getStandardCapacity())
+                    .maxCapacity(roomType.getMaxCapacity())
+                    .remainingRooms(minAvailableRooms)
+                    .availableRatePlans(availableRatePlans)
+                    .build();
+            availableRoomTypes.add(availableRoomTypeDto);
+        }
+
+        return AvailabilityResponse.builder()
+                .hotelId(hotel.getId())
+                .hotelName(hotel.getName())
+                .checkInDate(request.getCheckInDate())
+                .checkOutDate(request.getCheckOutDate())
+                .availableRoomTypes(availableRoomTypes)
                 .build();
-        return CompletableFuture.completedFuture(dto);
-    }
-
-    /**
-     * 특정 요금제에 대해 숙박 기간 전체의 총 요금을 계산합니다.
-     *
-     * <p>요금 계산 프로세스:</p>
-     * <ol>
-     *   <li>숙박 기간 중 각 날짜별 기본 요금 조회</li>
-     *   <li>해당 요금제에 적용 가능한 모든 가격 조정(할인/할증) 항목 조회</li>
-     *   <li>각 날짜별로 기본 요금 + 가격 조정을 적용하여 최종 일일 요금 계산</li>
-     *   <li>모든 일일 요금을 합산하여 총 숙박비 반환</li>
-     * </ol>
-     *
-     * <p>가격 조정에는 다음과 같은 유형이 있습니다:</p>
-     * <ul>
-     *   <li>얼리버드 할인 (예약일 기준)</li>
-     *   <li>시즌 할인/할증 (숙박일 기준)</li>
-     *   <li>고정 금액 할인/할증</li>
-     *   <li>퍼센트 할인/할증</li>
-     * </ul>
-     *
-     * @param ratePlan 요금을 계산할 요금제
-     * @param dates 숙박 기간의 날짜 목록 (체크인 ~ 체크아웃-1)
-     * @return 총 숙박 요금
-     * @throws BaseRateNotFoundException 특정 날짜의 기본 요금이 존재하지 않는 경우
-     */
-    private BigDecimal calculateTotalPriceForPlan(RatePlan ratePlan, List<LocalDate> dates) {
-        // 1. DB 조회 최소화를 위해 필요한 데이터를 미리 한 번에 가져옵니다.
-        final List<BaseRate> baseRates = baseRateRepository.findByRatePlanAndDateIn(ratePlan, dates);
-        final List<PriceAdjustment> adjustments = priceAdjustmentRepository.findActiveAdjustmentsForPlanInDateRange(
-                ratePlan, dates.get(0), dates.get(dates.size() - 1)
-        );
-
-        BigDecimal totalPrice = BigDecimal.ZERO;
-        final LocalDate today = LocalDate.now();
-
-        // 2. 하루씩 순회하며 일별 최종 요금을 계산하고 합산합니다.
-        for (LocalDate date : dates) {
-            // 해당 날짜의 기본 요금을 찾습니다.
-            BigDecimal dailyBasePrice = baseRates.stream()
-                    .filter(br -> br.getDate().equals(date))
-                    .findFirst()
-                    .orElseThrow(() -> new BaseRateNotFoundException(date))
-                    .getPrice();
-
-            // 기본 요금에 적용 가능한 모든 조정 항목(할인/할증)을 반영합니다.
-            BigDecimal finalDailyPrice = applyAdjustments(dailyBasePrice, date, today, adjustments);
-
-            totalPrice = totalPrice.add(finalDailyPrice);
-        }
-        return totalPrice;
-    }
-
-    /**
-     * 숙박 기간 동안 해당 객실 타입의 최소 가용 객실 수를 계산합니다.
-     *
-     * <p>이 메서드는 숙박 기간의 각 날짜별로 다음을 계산합니다:</p>
-     * <ul>
-     *   <li>전체 객실 수 - 이미 예약된 객실 수 = 가용 객실 수</li>
-     * </ul>
-     *
-     * <p>그 중에서 가장 적은 가용 객실 수를 반환하여,
-     * 숙박 기간 전체에 걸쳐 예약 가능한 최대 객실 수를 보장합니다.</p>
-     *
-     * @param roomType 확인할 객실 타입
-     * @param dates 확인할 날짜 목록
-     * @return 숙박 기간 중 최소 가용 객실 수 (모든 날짜의 재고 데이터가 없는 경우 0)
-     */
-    private int getMinimumAvailableRooms(RoomType roomType, List<LocalDate> dates) {
-        var inventories = roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates);
-        if (inventories.size() != dates.size()) { return 0; }
-        return inventories.stream()
-                .mapToInt(RoomInventory::getAvailableQuantity)
-                .min()
-                .orElse(0);
     }
 
     /**
@@ -298,5 +237,57 @@ public class AvailabilityService {
         }
         // 최종 금액이 음수가 되지 않도록 보정
         return finalPrice.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : finalPrice;
+    }
+
+    /**
+     * 주어진 숙박 날짜들에 대해 각 날짜의 객실 재고 중 최소 재고 수량을 반환합니다.
+     *
+     * <p>재고 수량이 충분하지 않은 경우(재고 데이터가 없거나, 날짜 수와 재고 데이터 수가 일치하지 않는 경우) 0을 반환합니다.</p>
+     *
+     * @param inventories 객실 타입과 숙박 날짜에 해당하는 재고 목록
+     * @param stayDates 조회 대상 숙박 날짜 목록
+     * @return 숙박 기간 중 최소 재고 수량 (0 이상)
+     */
+    private int getMinimumAvailableRooms(List<RoomInventory> inventories, List<LocalDate> stayDates) {
+        if (inventories.size() != stayDates.size()) { return 0; }
+        return inventories.stream()
+                .mapToInt(RoomInventory::getAvailableQuantity)
+                .min()
+                .orElse(0);
+    }
+
+    /**
+     * 특정 요금제에 대해 숙박 기간 동안의 총 요금을 계산합니다.
+     *
+     * <p>계산 로직:</p>
+     * <ol>
+     *   <li>숙박 날짜별로 기본 요금을 조회</li>
+     *   <li>각 날짜별로 적용 가능한 가격 조정을 반영하여 최종 일일 요금 계산</li>
+     *   <li>모든 숙박 날짜의 최종 일일 요금을 합산하여 총 요금 산출</li>
+     * </ol>
+     *
+     * @param baseRates 해당 요금제의 기본 요금 목록 (숙박 날짜에 해당하는 데이터만 포함)
+     * @param adjustments 해당 요금제에 적용 가능한 가격 조정 목록 (숙박 기간에 해당하는 데이터만 포함)
+     * @param stayDates 숙박 날짜 목록
+     * @return 숙박 기간 동안의 총 요금
+     * @throws BaseRateNotFoundException 숙박 날짜 중 하나라도 기본 요금이 없는 경우
+     */
+    private BigDecimal calculateTotalPriceForPlan(List<BaseRate> baseRates, List<PriceAdjustment> adjustments, List<LocalDate> stayDates) {
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        LocalDate today = LocalDate.now();
+
+        for (LocalDate stayDate : stayDates) {
+            BigDecimal dailyBasePrice = baseRates.stream()
+                    .filter(br -> br.getDate().equals(stayDate))
+                    .findFirst()
+                    .orElseThrow(() -> new BaseRateNotFoundException(stayDate))
+                    .getPrice();
+
+            BigDecimal finalDailyPrice = applyAdjustments(dailyBasePrice, stayDate, today, adjustments);
+
+            totalPrice = totalPrice.add(finalDailyPrice);
+        }
+
+        return totalPrice;
     }
 }
