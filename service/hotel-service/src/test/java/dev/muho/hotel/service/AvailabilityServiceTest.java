@@ -35,6 +35,8 @@ public class AvailabilityServiceTest {
     @Mock
     private HotelRepository hotelRepository;
     @Mock
+    private RoomTypeRepository roomTypeRepository;
+    @Mock
     private RoomInventoryRepository roomInventoryRepository;
     @Mock
     private BaseRateRepository baseRateRepository;
@@ -59,32 +61,29 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(roomType, "id", 1L);
         ReflectionTestUtils.setField(roomType, "ratePlans", List.of(ratePlan));
 
-        ReflectionTestUtils.setField(hotel, "roomTypes", List.of(roomType));
-
         // 재고 설정 (2일 모두 5개씩 재고 있음)
-        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).build();
+        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory1, "reservedQuantity", 5);
-
-        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).build();
+        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory2, "reservedQuantity", 5);
-
         List<RoomInventory> inventories = List.of(inventory1, inventory2);
 
         // 요금 설정 (1박에 100,000원)
         List<BaseRate> baseRates = List.of(
-                BaseRate.builder().date(dates.get(0)).price(new BigDecimal("100000")).build(),
-                BaseRate.builder().date(dates.get(1)).price(new BigDecimal("100000")).build()
+                BaseRate.builder().date(dates.get(0)).price(new BigDecimal("100000")).ratePlan(ratePlan).build(),
+                BaseRate.builder().date(dates.get(1)).price(new BigDecimal("100000")).ratePlan(ratePlan).build()
         );
 
         // Repository Mocking
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
-        when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(inventories);
-        when(baseRateRepository.findByRatePlanAndDateIn(ratePlan, dates)).thenReturn(baseRates);
-        when(priceAdjustmentRepository.findActiveAdjustmentsForPlanInDateRange(any(), any(), any())).thenReturn(Collections.emptyList());
+        when(roomTypeRepository.findByHotelIdWithRatePlans(1L)).thenReturn(List.of(roomType));
+        when(roomInventoryRepository.findByRoomTypeInAndDateIn(List.of(roomType), dates)).thenReturn(inventories);
+        when(baseRateRepository.findByRatePlanInAndDateIn(List.of(ratePlan), dates)).thenReturn(baseRates);
+        when(priceAdjustmentRepository.findActiveAdjustmentsByRatePlanInDateRange(any(), any(), any())).thenReturn(Collections.emptyList());
 
         // when (실제 테스트할 메서드 호출)
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
-        AvailabilityResponse response = availabilityService.checkAvailabilityAsync(1L, request).join();
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then (결과 검증)
         assertThat(response.getAvailableRoomTypes()).hasSize(1);
@@ -114,21 +113,21 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(hotel, "roomTypes", List.of(roomType));
 
         // 재고 설정 (하루는 5개, 하루는 0개)
-        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).build();
+        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory1, "reservedQuantity", 5);
-
-        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).build();
+        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory2, "reservedQuantity", 10);
 
         List<RoomInventory> inventories = List.of(inventory1, inventory2);
 
         // Repository Mocking
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
-        when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(inventories);
+        when(roomTypeRepository.findByHotelIdWithRatePlans(1L)).thenReturn(List.of(roomType));
+        when(roomInventoryRepository.findByRoomTypeInAndDateIn(List.of(roomType), dates)).thenReturn(inventories);
 
         // when
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
-        AvailabilityResponse response = availabilityService.checkAvailabilityAsync(1L, request).join();
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -144,7 +143,7 @@ public class AvailabilityServiceTest {
         LocalDate checkIn = TestDateUtils.getFutureLocalDatePlusDays(30);
         LocalDate checkOut = TestDateUtils.getFutureLocalDatePlusDays(32);
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
-        assertThatThrownBy(() -> availabilityService.checkAvailabilityAsync(999L, request).join())
+        assertThatThrownBy(() -> availabilityService.checkAvailability(999L, request))
                 .isInstanceOf(HotelNotFoundException.class)
                 .hasMessage("존재하지 않는 호텔입니다.");
     }
@@ -169,7 +168,7 @@ public class AvailabilityServiceTest {
 
         // when (성인 2명 + 아동 2명 = 총 4명, 객실 수용 인원 2명 초과)
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 2);
-        AvailabilityResponse response = availabilityService.checkAvailabilityAsync(1L, request).join();
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -198,17 +197,18 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(hotel, "roomTypes", List.of(roomType));
 
         // 재고는 충분
-        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).build();
+        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory1, "reservedQuantity", 5);
-        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).build();
+        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory2, "reservedQuantity", 5);
 
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
-        when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(List.of(inventory1, inventory2));
+        when(roomTypeRepository.findByHotelIdWithRatePlans(1L)).thenReturn(List.of(roomType));
+        when(roomInventoryRepository.findByRoomTypeInAndDateIn(List.of(roomType), dates)).thenReturn(List.of(inventory1, inventory2));
 
         // when
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
-        AvailabilityResponse response = availabilityService.checkAvailabilityAsync(1L, request).join();
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -236,15 +236,16 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(hotel, "roomTypes", List.of(roomType));
 
         // 재고는 충분
-        RoomInventory inventory = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).build();
+        RoomInventory inventory = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory, "reservedQuantity", 5);
 
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
-        when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(List.of(inventory));
+        when(roomTypeRepository.findByHotelIdWithRatePlans(1L)).thenReturn(List.of(roomType));
+        when(roomInventoryRepository.findByRoomTypeInAndDateIn(List.of(roomType), dates)).thenReturn(List.of(inventory));
 
         // when
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
-        AvailabilityResponse response = availabilityService.checkAvailabilityAsync(1L, request).join();
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -274,18 +275,19 @@ public class AvailabilityServiceTest {
         // 재고는 모든 날짜에 충분
         List<RoomInventory> inventories = dates.stream()
                 .map(date -> {
-                    RoomInventory inventory = RoomInventory.builder().date(date).totalQuantity(10).build();
+                    RoomInventory inventory = RoomInventory.builder().date(date).totalQuantity(10).roomType(roomType).build();
                     ReflectionTestUtils.setField(inventory, "reservedQuantity", 5);
                     return inventory;
                 })
                 .toList();
 
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
-        when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(inventories);
+        when(roomTypeRepository.findByHotelIdWithRatePlans(1L)).thenReturn(List.of(roomType));
+        when(roomInventoryRepository.findByRoomTypeInAndDateIn(List.of(roomType), dates)).thenReturn(inventories);
 
         // when
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
-        AvailabilityResponse response = availabilityService.checkAvailabilityAsync(1L, request).join();
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -314,13 +316,15 @@ public class AvailabilityServiceTest {
         // 재고 설정
         RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).build();
         ReflectionTestUtils.setField(inventory1, "reservedQuantity", 5);
+        ReflectionTestUtils.setField(inventory1, "roomType", roomType);
         RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).build();
         ReflectionTestUtils.setField(inventory2, "reservedQuantity", 5);
+        ReflectionTestUtils.setField(inventory2, "roomType", roomType);
 
         // 기본 요금 설정 (1박에 100,000원)
         List<BaseRate> baseRates = List.of(
-                BaseRate.builder().date(dates.get(0)).price(new BigDecimal("100000")).build(),
-                BaseRate.builder().date(dates.get(1)).price(new BigDecimal("100000")).build()
+                BaseRate.builder().date(dates.get(0)).price(new BigDecimal("100000")).ratePlan(ratePlan).build(),
+                BaseRate.builder().date(dates.get(1)).price(new BigDecimal("100000")).ratePlan(ratePlan).build()
         );
 
         // 10% 할인 설정
@@ -331,16 +335,18 @@ public class AvailabilityServiceTest {
                 .amount(new BigDecimal("10"))
                 .calculationType(CalculationType.PERCENTAGE)
                 .adjustmentType(AdjustmentType.DISCOUNT)
+                .ratePlan(ratePlan)
                 .build();
 
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
-        when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(List.of(inventory1, inventory2));
-        when(baseRateRepository.findByRatePlanAndDateIn(ratePlan, dates)).thenReturn(baseRates);
-        when(priceAdjustmentRepository.findActiveAdjustmentsForPlanInDateRange(any(), any(), any())).thenReturn(List.of(discount));
+        when(roomTypeRepository.findByHotelIdWithRatePlans(1L)).thenReturn(List.of(roomType));
+        when(roomInventoryRepository.findByRoomTypeInAndDateIn(List.of(roomType), dates)).thenReturn(List.of(inventory1, inventory2));
+        when(baseRateRepository.findByRatePlanInAndDateIn(List.of(ratePlan), dates)).thenReturn(baseRates);
+        when(priceAdjustmentRepository.findActiveAdjustmentsByRatePlanInDateRange(any(), any(), any())).thenReturn(List.of(discount));
 
         // when
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
-        AvailabilityResponse response = availabilityService.checkAvailabilityAsync(1L, request).join();
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).hasSize(1);
@@ -372,15 +378,15 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(hotel, "roomTypes", List.of(roomType));
 
         // 재고 설정
-        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).build();
+        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory1, "reservedQuantity", 5);
-        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).build();
+        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory2, "reservedQuantity", 5);
 
         // 기본 요금 설정 (1박에 100,000원)
         List<BaseRate> baseRates = List.of(
-                BaseRate.builder().date(dates.get(0)).price(new BigDecimal("100000")).build(),
-                BaseRate.builder().date(dates.get(1)).price(new BigDecimal("100000")).build()
+                BaseRate.builder().date(dates.get(0)).price(new BigDecimal("100000")).ratePlan(ratePlan).build(),
+                BaseRate.builder().date(dates.get(1)).price(new BigDecimal("100000")).ratePlan(ratePlan).build()
         );
 
         // 고정 금액 20,000원 할증 설정
@@ -391,16 +397,18 @@ public class AvailabilityServiceTest {
                 .amount(new BigDecimal("20000"))
                 .calculationType(CalculationType.FIXED_AMOUNT)
                 .adjustmentType(AdjustmentType.SURCHARGE)
+                .ratePlan(ratePlan)
                 .build();
 
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
-        when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(List.of(inventory1, inventory2));
-        when(baseRateRepository.findByRatePlanAndDateIn(ratePlan, dates)).thenReturn(baseRates);
-        when(priceAdjustmentRepository.findActiveAdjustmentsForPlanInDateRange(any(), any(), any())).thenReturn(List.of(surcharge));
+        when(roomTypeRepository.findByHotelIdWithRatePlans(1L)).thenReturn(List.of(roomType));
+        when(roomInventoryRepository.findByRoomTypeInAndDateIn(List.of(roomType), dates)).thenReturn(List.of(inventory1, inventory2));
+        when(baseRateRepository.findByRatePlanInAndDateIn(List.of(ratePlan), dates)).thenReturn(baseRates);
+        when(priceAdjustmentRepository.findActiveAdjustmentsByRatePlanInDateRange(any(), any(), any())).thenReturn(List.of(surcharge));
 
         // when
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
-        AvailabilityResponse response = availabilityService.checkAvailabilityAsync(1L, request).join();
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).hasSize(1);
@@ -440,37 +448,36 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(hotel, "roomTypes", List.of(roomType1, roomType2));
 
         // 첫 번째 객실 타입 재고
-        RoomInventory inventory1_1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).build();
+        RoomInventory inventory1_1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).roomType(roomType1).build();
         ReflectionTestUtils.setField(inventory1_1, "reservedQuantity", 5);
-        RoomInventory inventory1_2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).build();
+        RoomInventory inventory1_2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).roomType(roomType1).build();
         ReflectionTestUtils.setField(inventory1_2, "reservedQuantity", 5);
 
         // 두 번째 객실 타입 재고
-        RoomInventory inventory2_1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(5).build();
+        RoomInventory inventory2_1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(5).roomType(roomType2).build();
         ReflectionTestUtils.setField(inventory2_1, "reservedQuantity", 2);
-        RoomInventory inventory2_2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(5).build();
+        RoomInventory inventory2_2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(5).roomType(roomType2).build();
         ReflectionTestUtils.setField(inventory2_2, "reservedQuantity", 2);
 
         // 기본 요금 설정
         List<BaseRate> baseRates1 = List.of(
-                BaseRate.builder().date(dates.get(0)).price(new BigDecimal("100000")).build(),
-                BaseRate.builder().date(dates.get(1)).price(new BigDecimal("100000")).build()
+                BaseRate.builder().date(dates.get(0)).price(new BigDecimal("100000")).ratePlan(ratePlan1).build(),
+                BaseRate.builder().date(dates.get(1)).price(new BigDecimal("100000")).ratePlan(ratePlan1).build()
         );
         List<BaseRate> baseRates2 = List.of(
-                BaseRate.builder().date(dates.get(0)).price(new BigDecimal("150000")).build(),
-                BaseRate.builder().date(dates.get(1)).price(new BigDecimal("150000")).build()
+                BaseRate.builder().date(dates.get(0)).price(new BigDecimal("150000")).ratePlan(ratePlan2).build(),
+                BaseRate.builder().date(dates.get(1)).price(new BigDecimal("150000")).ratePlan(ratePlan2).build()
         );
 
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
-        when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType1, dates)).thenReturn(List.of(inventory1_1, inventory1_2));
-        when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType2, dates)).thenReturn(List.of(inventory2_1, inventory2_2));
-        when(baseRateRepository.findByRatePlanAndDateIn(ratePlan1, dates)).thenReturn(baseRates1);
-        when(baseRateRepository.findByRatePlanAndDateIn(ratePlan2, dates)).thenReturn(baseRates2);
-        when(priceAdjustmentRepository.findActiveAdjustmentsForPlanInDateRange(any(), any(), any())).thenReturn(Collections.emptyList());
+        when(roomTypeRepository.findByHotelIdWithRatePlans(1L)).thenReturn(List.of(roomType1, roomType2));
+        when(roomInventoryRepository.findByRoomTypeInAndDateIn(List.of(roomType1, roomType2), dates)).thenReturn(List.of(inventory1_1, inventory1_2, inventory2_1, inventory2_2));
+        when(baseRateRepository.findByRatePlanInAndDateIn(List.of(ratePlan1, ratePlan2), dates)).thenReturn(List.of(baseRates1.get(0), baseRates2.get(0), baseRates1.get(1), baseRates2.get(1)));
+        when(priceAdjustmentRepository.findActiveAdjustmentsByRatePlanInDateRange(any(), any(), any())).thenReturn(Collections.emptyList());
 
         // when
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
-        AvailabilityResponse response = availabilityService.checkAvailabilityAsync(1L, request).join();
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).hasSize(2);
@@ -502,7 +509,6 @@ public class AvailabilityServiceTest {
         // 예약 기간이 지난 요금제 (예약 마감일이 과거)
         RatePlan ratePlan = RatePlan.builder()
                 .name("마감된 플랜")
-                
                 .minNights(1)
                 .bookingStartDate(TestDateUtils.getFutureLocalDatePlusDays(-60))
                 .bookingEndDate(TestDateUtils.getFutureLocalDatePlusDays(-30)) // 예약 마감일이 과거
@@ -516,17 +522,18 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(hotel, "roomTypes", List.of(roomType));
 
         // 재고는 충분
-        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).build();
+        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory1, "reservedQuantity", 5);
-        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).build();
+        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory2, "reservedQuantity", 5);
 
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
-        when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(List.of(inventory1, inventory2));
+        when(roomTypeRepository.findByHotelIdWithRatePlans(1L)).thenReturn(List.of(roomType));
+        when(roomInventoryRepository.findByRoomTypeInAndDateIn(List.of(roomType), dates)).thenReturn(List.of(inventory1, inventory2));
 
         // when
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
-        AvailabilityResponse response = availabilityService.checkAvailabilityAsync(1L, request).join();
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();
@@ -560,17 +567,18 @@ public class AvailabilityServiceTest {
         ReflectionTestUtils.setField(hotel, "roomTypes", List.of(roomType));
 
         // 재고는 충분
-        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).build();
+        RoomInventory inventory1 = RoomInventory.builder().date(dates.get(0)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory1, "reservedQuantity", 5);
-        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).build();
+        RoomInventory inventory2 = RoomInventory.builder().date(dates.get(1)).totalQuantity(10).roomType(roomType).build();
         ReflectionTestUtils.setField(inventory2, "reservedQuantity", 5);
 
         when(hotelRepository.findById(1L)).thenReturn(Optional.of(hotel));
-        when(roomInventoryRepository.findByRoomTypeAndDateIn(roomType, dates)).thenReturn(List.of(inventory1, inventory2));
+        when(roomTypeRepository.findByHotelIdWithRatePlans(1L)).thenReturn(List.of(roomType));
+        when(roomInventoryRepository.findByRoomTypeInAndDateIn(List.of(roomType), dates)).thenReturn(List.of(inventory1, inventory2));
 
         // when
         AvailabilityRequest request = new AvailabilityRequest(checkIn, checkOut, 2, 0);
-        AvailabilityResponse response = availabilityService.checkAvailabilityAsync(1L, request).join();
+        AvailabilityResponse response = availabilityService.checkAvailability(1L, request);
 
         // then
         assertThat(response.getAvailableRoomTypes()).isEmpty();

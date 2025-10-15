@@ -63,4 +63,8 @@ public class Hotel extends BaseTimeEntity {
     public void changeStatus(Status status) {
         this.status = status;
     }
+
+    public boolean isOnSale() {
+        return this.status == Status.ACTIVE;
+    }
 }
