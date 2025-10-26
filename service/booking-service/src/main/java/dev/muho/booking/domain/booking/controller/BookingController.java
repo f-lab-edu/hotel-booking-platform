@@ -1,10 +1,11 @@
-package dev.muho.booking.domain.booking;
+package dev.muho.booking.domain.booking.controller;
 
 import dev.muho.booking.domain.booking.dto.api.BookingRequest;
 import dev.muho.booking.domain.booking.dto.api.BookingResponse;
 import dev.muho.booking.domain.booking.dto.api.BookingStatusUpdateRequest;
 import dev.muho.booking.domain.booking.dto.command.BookingCreateCommand;
 import dev.muho.booking.domain.booking.dto.command.BookingInfoResult;
+import dev.muho.booking.domain.booking.event.BookingCreatedEvent;
 import dev.muho.booking.domain.booking.service.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final KafkaTemplate<String, BookingCreatedEvent> kafkaTemplate;
 
     @GetMapping("/hotels/{hotelId}")
     public Page<BookingResponse> getBookingsByHotel(@PathVariable Long hotelId, Pageable pageable) {
@@ -43,6 +46,17 @@ public class BookingController {
     public BookingResponse createBooking(@Valid @RequestBody BookingRequest request) {
         BookingCreateCommand command = BookingCreateCommand.from(request);
         BookingInfoResult created = bookingService.createBooking(command, currentUserId());
+
+        BookingCreatedEvent event = BookingCreatedEvent.builder()
+                .bookingLongId(created.id())
+                .bookingId(created.bookingId())
+                .hotelId(created.hotelId())
+                .roomTypeId(created.roomTypeId())
+                .checkInDate(created.checkInDate())
+                .checkOutDate(created.checkOutDate())
+                .build();
+        kafkaTemplate.send("booking-created", event);
+
         return BookingResponse.from(created);
     }
 

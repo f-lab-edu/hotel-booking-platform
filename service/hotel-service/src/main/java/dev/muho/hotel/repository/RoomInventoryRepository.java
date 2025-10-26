@@ -18,4 +18,6 @@ public interface RoomInventoryRepository extends JpaRepository<RoomInventory, Lo
      * 특정 객실 타입과 날짜에 해당하는 재고 정보를 조회합니다.
      */
     Optional<RoomInventory> findByRoomTypeAndDate(RoomType roomType, LocalDate date);
+
+    List<RoomInventory> findByRoomTypeInAndDateIn(List<RoomType> roomTypes, List<LocalDate> dates);
 }

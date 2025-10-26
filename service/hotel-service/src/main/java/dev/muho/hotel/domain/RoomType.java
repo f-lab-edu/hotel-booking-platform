@@ -76,4 +76,8 @@ public class RoomType extends BaseTimeEntity {
     public boolean validateCapacity(int numOfAdult, int numOfChildren) {
         return this.maxCapacity >= numOfAdult + numOfChildren;
     }
+
+    public boolean isOnSale() {
+        return this.status == Status.ACTIVE;
+    }
 }
