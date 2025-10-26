@@ -81,7 +81,7 @@ public class Booking {
                     LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.bookingId = bookingId;
-        this.status = status == null ? BookingStatus.RESERVED : status;
+        this.status = status == null ? BookingStatus.PENDING : status;
         this.userId = userId;
         this.guestName = guestName;
         this.hotelId = hotelId;
@@ -106,7 +106,7 @@ public class Booking {
                                     BigDecimal basePrice, BigDecimal finalPrice) {
         return Booking.builder()
                 .bookingId(bookingId)
-                .status(BookingStatus.RESERVED)
+                .status(BookingStatus.PENDING)
                 .userId(userId)
                 .guestName(guestName)
                 .hotelId(hotelId)
@@ -142,7 +142,5 @@ public class Booking {
         this.finalPrice = finalPrice;
         this.updatedAt = LocalDateTime.now();
     }
-
-    public void setId(Long id) { this.id = id; }
 }
 
